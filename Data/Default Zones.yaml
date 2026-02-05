@@ -1,0 +1,32 @@
+zones:
+  - name: Flats
+    types: [Overland]
+    encounter_chance: 10%
+    
+  - name: Shudds
+    types: [Overland]
+    encounter_chance: 15%
+    
+  - name: Croch
+    types: [Overland]
+    encounter_chance: 15%
+    
+  - name: Road
+    types: [Overlay]
+    encounter_chance: 20%
+    
+  - name: River
+    types: [Overlay]
+    encounter_chance: 15%
+    
+  - name: Ruin
+    types: [Overlay, Site]
+    encounter_chance: 25%
+    
+  - name: Cave
+    types: [Site]
+    encounter_chance: 20%
+    
+  - name: Dungeon
+    types: [Site]
+    encounter_chance: 15%

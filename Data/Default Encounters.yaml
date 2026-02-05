@@ -1,0 +1,136 @@
+encounters:
+  - name: Ankheg
+    description: 12-foot tall mantis-like insect with powerful mandibles and acid spray.
+    habitat: Meadows, Rolling Hills. Prefers dry and sandy plains with dirt suitable for burrowing.
+    sparks:
+      - The adventuring company comes across the crumbling lip of a hole. At the bottom is an ankheg, waiting to pounce.
+      - An ankheg is digging a new pit-burrow.
+      - The ankheg is fleeing from a land shark.
+    watch:
+      dawn: 15%
+      morning: 30%
+      afternoon: 30%
+      dusk: 15%
+      early night: 5%
+      late night: 5%
+      
+  - name: Badger, Giant
+    description: 6-foot badger with coarse grey and black striped fur; powerful digging claws.
+    habitat: Light Forest, Dense Forest, Rolling Hills, Craggy Hills.
+    sparks:
+      - A giant badger has slain a hunting dog that accidentally tracked it.
+      - The giant badger ate a treeful of fermented fruit. Now it is drunk.
+      - The badger is digging for grubs and roots, tearing up the earth.
+    watch:
+      dawn: 15%
+      morning: 10%
+      afternoon: 10%
+      dusk: 20%
+      early night: 25%
+      late night: 20%
+      
+  - name: Barrow-Wight
+    description: Corpse-like humanoid with pale, waxy skin and glowing eyes.
+    habitat: Ruins, Caverns, Dungeons. Ancient burial mounds and tombs.
+    sparks:
+      - The adventuring company discovers a Geatish hill barrow. Inside are barrow-wights.
+      - A barrow-wight with an antler crown, with antler-wraith servitors, guards a ring of dolmen-stones.
+      - Barrow-wights haunt the woods at night. If they catch humanoids, they drag them to a hellish pit.
+      - In his burial cairn, a barrow-wight sits surrounded by undead ravens. He will challenge intruders to a riddle contest.
+    watch:
+      dawn: 10%
+      morning: 0%
+      afternoon: 0%
+      dusk: 20%
+      early night: 35%
+      late night: 35%
+      
+  - name: Traveler
+    description: A fellow traveler on the road - merchant, pilgrim, or wanderer.
+    habitat: Roads, settlements, trade routes.
+    sparks:
+      - A merchant with a broken wagon wheel needs assistance.
+      - A group of pilgrims heading to a distant shrine.
+      - A lone wanderer with news of dangers ahead.
+    watch:
+      dawn: 10%
+      morning: 20%
+      afternoon: 25%
+      dusk: 20%
+      early night: 15%
+      late night: 10%
+      
+  - name: Catamount
+    description: Large wild cat with tufted ears and powerful jaws.
+    habitat: Forests, hills, rocky outcrops.
+    sparks:
+      - A catamount stalks the party from the underbrush.
+      - Fresh catamount tracks lead to a nearby den.
+      - The sound of a catamount's scream echoes through the hills.
+    watch:
+      dawn: 20%
+      morning: 15%
+      afternoon: 10%
+      dusk: 25%
+      early night: 20%
+      late night: 10%
+      
+  - name: Bear
+    description: Massive brown bear, standing 8 feet tall when upright.
+    habitat: Forests, mountains, near rivers and streams.
+    sparks:
+      - A bear is fishing in a nearby stream.
+      - The party stumbles upon a bear's den with cubs inside.
+      - An angry bear charges, defending its territory.
+    watch:
+      dawn: 15%
+      morning: 20%
+      afternoon: 25%
+      dusk: 15%
+      early night: 15%
+      late night: 10%
+      
+  - name: Bug, Giant
+    description: Large insectoid creature with chitinous armor and multiple legs.
+    habitat: Caves, dungeons, dark forests, ruins.
+    sparks:
+      - A giant bug is consuming a corpse in the corner.
+      - Two giant bugs are fighting over territory.
+      - The bug has built a nest of debris and bones.
+    watch:
+      dawn: 10%
+      morning: 10%
+      afternoon: 10%
+      dusk: 15%
+      early night: 25%
+      late night: 30%
+      
+  - name: Frog, Giant
+    description: 6-foot amphibian with sticky tongue and powerful legs.
+    habitat: Swamps, rivers, wetlands.
+    sparks:
+      - A giant frog sits motionless, waiting for prey.
+      - The frog's tongue lashes out at passing birds.
+      - Multiple giant frogs croak in unison, creating a deafening sound.
+    watch:
+      dawn: 15%
+      morning: 10%
+      afternoon: 10%
+      dusk: 20%
+      early night: 25%
+      late night: 20%
+      
+  - name: Gargoyle
+    description: Stone creature with bat-like wings that comes to life.
+    habitat: Ruins, dungeons, ancient structures.
+    sparks:
+      - A gargoyle crouches atop a pillar, perfectly still until approached.
+      - Two gargoyles are locked in combat, stone chips flying.
+      - The gargoyle is guarding a treasure chest or doorway.
+    watch:
+      dawn: 10%
+      morning: 5%
+      afternoon: 5%
+      dusk: 15%
+      early night: 30%
+      late night: 35%

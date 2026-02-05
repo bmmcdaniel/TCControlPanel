@@ -1,0 +1,40 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# NiceGUI runtime files
+.nicegui/
+
+# Logs
+logs/
+*.log
+
+# Backups and old data
+Backups/
+Old Data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/

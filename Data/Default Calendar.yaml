@@ -1,0 +1,87 @@
+calendar:
+  name: Torchcrawl Standard Calendar
+  description: A simple 10-month fantasy calendar with 300 days per year
+  days_per_week: 6
+  current_date:
+    month: 1
+    day: 15
+  months:
+  - name: Deepwinter
+    days: 30
+    season: Winter
+  - name: Latewinter
+    days: 30
+    season: Winter
+  - name: Earlyspring
+    days: 30
+    season: Spring
+  - name: Latespring
+    days: 30
+    season: Spring
+  - name: Earlysummer
+    days: 30
+    season: Summer
+  - name: Highsun
+    days: 30
+    season: Summer
+  - name: Latesummer
+    days: 30
+    season: Summer
+  - name: Earlyfall
+    days: 30
+    season: Fall
+  - name: Latefall
+    days: 30
+    season: Fall
+  - name: Frostfall
+    days: 30
+    season: Winter
+  holidays:
+  - name: Midwinter Festival
+    description: A week-long celebration marking the darkest point of winter. Communities
+      gather around great fires for feasting, storytelling, and gift-giving. It is
+      said that on this night, the veil between worlds grows thin.
+    month: Deepwinter
+    day: 15
+  - name: Day of Thaw
+    description: The traditional beginning of spring, when the ice begins to break
+      and water flows again. Farmers prepare their fields and travelers set out on
+      the roads after the long winter.
+    month: Earlyspring
+    day: 1
+  - name: Greengrass
+    description: A joyous spring festival celebrating new growth and rebirth. Villages
+      hold outdoor feasts on the fresh grass, children weave flower crowns, and young
+      couples dance until dawn.
+    month: Latespring
+    day: 20
+  - name: Midsummer
+    description: The longest day of the year, celebrated with bonfires that burn from
+      dusk until dawn. Musicians play, lovers pledge their vows, and communities stay
+      awake together to honor the sun's power.
+    month: Highsun
+    day: 15
+  - name: First Harvest
+    description: The beginning of the harvest season, when the first wheat is cut
+      and the first fruits ripen. A day of gratitude and feasting, with prayers for
+      a bountiful autumn.
+    month: Latesummer
+    day: 25
+  - name: Harvest Home
+    description: The final harvest festival, celebrating the completion of bringing
+      in the crops. Markets overflow with abundance, and communities share their bounty
+      with neighbors and travelers.
+    month: Earlyfall
+    day: 20
+  - name: Day of the Dead
+    description: A solemn holiday honoring ancestors and departed loved ones. Families
+      visit burial grounds with offerings of food and flowers, candles are lit at
+      dusk, and stories of the deceased are shared.
+    month: Latefall
+    day: 30
+  - name: Longnight
+    description: The longest night of the year, when darkness holds sway for nearly
+      sixteen hours. Vigils are kept with candles and prayer, warding off evil spirits
+      until the sun returns at dawn.
+    month: Frostfall
+    day: 1

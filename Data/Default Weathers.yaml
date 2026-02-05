@@ -1,0 +1,28 @@
+weathers:
+  - name: Clear
+    effects: []
+    
+  - name: Misty
+    effects:
+      - Poor Visibility
+      
+  - name: Gentle Rains
+    effects:
+      - Light Precipitation
+      
+  - name: Heavy Rains
+    effects:
+      - Heavy Precipitation
+      - Poor Visibility
+      
+  - name: Thunderstorm
+    effects:
+      - Heavy Precipitation
+      - Poor Visibility
+      - Difficult Travel
+      
+  - name: Heavy Snow
+    effects:
+      - Heavy Precipitation
+      - Poor Visibility
+      - Difficult Travel

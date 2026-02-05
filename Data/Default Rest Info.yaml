@@ -1,0 +1,101 @@
+rest_checks:
+  rest_DCs:
+    Summer:
+      - camp: "Shelter & Fire & Bedding"
+        dc: "Automatic Success"
+      - camp: "Shelter & Fire"
+        dc: "DC 0"
+      - camp: "Shelter & Bedding"
+        dc: "DC 0"
+      - camp: "Shelter only"
+        dc: "DC 5"
+      - camp: "Fire & Bedding"
+        dc: "DC 0"
+      - camp: "Fire only"
+        dc: "DC 5"
+      - camp: "Bedding only"
+        dc: "DC 5"
+      - camp: "None"
+        dc: "DC 10"
+        
+    Autumn:
+      - camp: "Shelter & Fire & Bedding"
+        dc: "DC 0"
+      - camp: "Shelter & Fire"
+        dc: "DC 5"
+      - camp: "Shelter & Bedding"
+        dc: "DC 5"
+      - camp: "Shelter only"
+        dc: "DC 10"
+      - camp: "Fire & Bedding"
+        dc: "DC 5"
+      - camp: "Fire only"
+        dc: "DC 10"
+      - camp: "Bedding only"
+        dc: "DC 10"
+      - camp: "None"
+        dc: "DC 15"
+        
+    Spring:
+      - camp: "Shelter & Fire & Bedding"
+        dc: "DC 0"
+      - camp: "Shelter & Fire"
+        dc: "DC 5"
+      - camp: "Shelter & Bedding"
+        dc: "DC 5"
+      - camp: "Shelter only"
+        dc: "DC 10"
+      - camp: "Fire & Bedding"
+        dc: "DC 5"
+      - camp: "Fire only"
+        dc: "DC 10"
+      - camp: "Bedding only"
+        dc: "DC 10"
+      - camp: "None"
+        dc: "DC 15"
+        
+    Winter:
+      - camp: "Shelter & Fire & Bedding"
+        dc: "DC 5"
+      - camp: "Shelter & Fire"
+        dc: "DC 10"
+      - camp: "Shelter & Bedding"
+        dc: "DC 10"
+      - camp: "Shelter only"
+        dc: "DC 15"
+      - camp: "Fire & Bedding"
+        dc: "DC 10"
+      - camp: "Fire only"
+        dc: "DC 15"
+      - camp: "Bedding only"
+        dc: "DC 15"
+      - camp: "None"
+        dc: "DC 20"
+        
+  weather_modifiers:
+    - effect: "Light Precipitation"
+      description: "Light precipitation without shelter"
+      modifier: "-5"
+      
+    - effect: "Heavy Precipitation"
+      description: "Heavy precipitation without shelter"
+      modifier: "-10"
+      
+  situational_modifiers:
+    - situation: "Character has the Camping skill"
+      modifier: "Advantage"
+      
+    - situation: "Character spent the day resting, i.e. did not travel or explore"
+      modifier: "Advantage"
+      
+    - situation: "Character recently feasted"
+      modifier: "Advantage"
+      
+    - situation: "Character did not eat during the day"
+      modifier: "Disadvantage"
+      
+    - situation: "Character engaged in forced march"
+      modifier: "Disadvantage"
+      
+    - situation: "Sleep interrupted by vigorous activity, such as combat or spellcasting"
+      modifier: "Disadvantage"
