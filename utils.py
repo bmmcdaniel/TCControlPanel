@@ -11,12 +11,19 @@ Functions:
 - get_current_season() -> str: Get season from current calendar month
 - advance_calendar_date(days: int) -> bool: Advance calendar date and save to file
 - get_current_holiday() -> dict | None: Get holiday for current date if any
+- get_moon_phase_info() -> dict | None: Get current moon phase name, icon, index
+- get_moon_phase_for_day(lunar_day, cycle_length) -> dict: Get phase info for specific lunar day
+- advance_lunar_day(days: int) -> bool: Advance lunar day and handle blood moon roll
+- set_lunar_day_to_phase(phase_index: int) -> bool: Set lunar day to start of a phase
+- adjust_lunar_day(delta: int) -> bool: Adjust lunar day by +/- delta
+- initialize_lunar_day() -> bool: Randomize lunar day if not set
 
 Classes: None
 """
 
 from typing import Dict, Optional
 import random
+import math
 
 # Global variable for verbose mode (set by command line argument)
 _VERBOSE_MODE = False
@@ -374,3 +381,324 @@ def get_current_holiday() -> Optional[Dict]:
             return holiday
 
     return None
+
+
+# ============================================================================
+# MOON PHASE UTILITY FUNCTIONS
+# ============================================================================
+
+# Moon phases in order (index 0-7)
+MOON_PHASES = [
+    {"name": "New Moon", "icon": "🌑"},
+    {"name": "Waxing Crescent", "icon": "🌒"},
+    {"name": "First Quarter", "icon": "🌓"},
+    {"name": "Waxing Gibbous", "icon": "🌔"},
+    {"name": "Full Moon", "icon": "🌕"},
+    {"name": "Waning Gibbous", "icon": "🌖"},
+    {"name": "Last Quarter", "icon": "🌗"},
+    {"name": "Waning Crescent", "icon": "🌘"},
+]
+
+FULL_MOON_PHASE_INDEX = 4  # Index of Full Moon in MOON_PHASES
+
+
+def get_moon_phase_for_day(lunar_day: int, cycle_length: int) -> Dict:
+    """
+    Get moon phase info for a specific lunar day.
+
+    Args:
+        lunar_day: Current day in lunar cycle (1 to cycle_length)
+        cycle_length: Total days in lunar cycle
+
+    Returns:
+        Dict with keys: name, icon, phase_index, is_full_moon
+
+    Example:
+        phase = get_moon_phase_for_day(14, 27)
+        # Returns: {"name": "Full Moon", "icon": "🌕", "phase_index": 4, "is_full_moon": True}
+    """
+    if lunar_day < 1:
+        lunar_day = 1
+    if lunar_day > cycle_length:
+        lunar_day = cycle_length
+
+    # Calculate which phase (0-7) based on position in cycle
+    # Each phase spans cycle_length / 8 days
+    days_per_phase = cycle_length / 8.0
+    phase_index = int((lunar_day - 1) / days_per_phase)
+
+    # Clamp to valid range
+    if phase_index > 7:
+        phase_index = 7
+
+    phase = MOON_PHASES[phase_index]
+    return {
+        "name": phase["name"],
+        "icon": phase["icon"],
+        "phase_index": phase_index,
+        "is_full_moon": phase_index == FULL_MOON_PHASE_INDEX
+    }
+
+
+def get_moon_phase_info() -> Optional[Dict]:
+    """
+    Get the current moon phase info from calendar data.
+
+    Returns:
+        - Dict with keys: name, icon, phase_index, is_full_moon, is_blood_moon, lunar_day
+        - None if no calendar loaded or no lunar data
+
+    Example:
+        phase = get_moon_phase_info()
+        if phase:
+            print(f"{phase['icon']} {phase['name']}")
+    """
+    import config  # Lazy import to avoid circular dependency
+
+    # No calendar loaded
+    if not config.calendar_data:
+        return None
+
+    # Get lunar data
+    lunar_day = config.calendar_data.get('lunar_day')
+    cycle_length = config.calendar_data.get('lunar_cycle_length', 27)
+
+    # No lunar day set
+    if lunar_day is None:
+        return None
+
+    # Get phase info
+    phase_info = get_moon_phase_for_day(lunar_day, cycle_length)
+
+    # Add blood moon status
+    is_blood_moon = config.calendar_data.get('is_blood_moon', False)
+    phase_info['is_blood_moon'] = is_blood_moon and phase_info['is_full_moon']
+    phase_info['lunar_day'] = lunar_day
+
+    # Override name if blood moon
+    if phase_info['is_blood_moon']:
+        phase_info['name'] = "Blood Moon"
+
+    return phase_info
+
+
+def get_phase_start_day(phase_index: int, cycle_length: int) -> int:
+    """
+    Get the starting lunar day for a given phase.
+
+    Args:
+        phase_index: Phase index (0-7)
+        cycle_length: Total days in lunar cycle
+
+    Returns:
+        Starting lunar day for that phase (1-based)
+    """
+    days_per_phase = cycle_length / 8.0
+    return math.ceil(phase_index * days_per_phase) + 1
+
+
+def advance_lunar_day(days: int = 1) -> bool:
+    """
+    Advance the lunar day by the specified number of days.
+
+    Handles cycle overflow (wraps to day 1 when reaching cycle_length).
+    Checks for blood moon when entering full moon phase.
+    Saves the new lunar day to the calendar file.
+
+    Args:
+        days: Number of days to advance (default 1)
+
+    Returns:
+        True if successful, False if no calendar or save failed
+
+    Example:
+        success = advance_lunar_day(1)
+    """
+    import config  # Lazy import to avoid circular dependency
+    from data_loader import save_lunar_data
+
+    # No calendar loaded
+    if not config.calendar_data:
+        return False
+
+    # Get current lunar data
+    lunar_day = config.calendar_data.get('lunar_day')
+    cycle_length = config.calendar_data.get('lunar_cycle_length', 27)
+    blood_moon_chance = config.calendar_data.get('blood_moon_chance', 10)
+    is_blood_moon = config.calendar_data.get('is_blood_moon', False)
+
+    # If lunar_day not set, initialize it
+    if lunar_day is None:
+        lunar_day = random.randint(1, cycle_length)
+
+    # Get phase before advancing
+    old_phase = get_moon_phase_for_day(lunar_day, cycle_length)
+
+    # Advance lunar day
+    lunar_day += days
+
+    # Handle cycle overflow
+    while lunar_day > cycle_length:
+        lunar_day -= cycle_length
+
+    # Get phase after advancing
+    new_phase = get_moon_phase_for_day(lunar_day, cycle_length)
+
+    # Check if we entered full moon phase
+    if new_phase['is_full_moon'] and not old_phase['is_full_moon']:
+        # Roll for blood moon
+        roll = random.randint(1, 100)
+        is_blood_moon = roll <= blood_moon_chance
+        verbose_print(f"Entering Full Moon phase. Blood moon roll: {roll} <= {blood_moon_chance}? {is_blood_moon}")
+    elif not new_phase['is_full_moon']:
+        # Clear blood moon status when leaving full moon
+        is_blood_moon = False
+
+    # Save lunar data
+    return save_lunar_data(lunar_day, is_blood_moon)
+
+
+def set_lunar_day_to_phase(phase_index: int) -> bool:
+    """
+    Set the lunar day to the start of a specific phase.
+
+    Args:
+        phase_index: Phase index (0-7)
+
+    Returns:
+        True if successful, False if no calendar or save failed
+
+    Example:
+        # Set to Full Moon (phase index 4)
+        success = set_lunar_day_to_phase(4)
+    """
+    import config  # Lazy import to avoid circular dependency
+    from data_loader import save_lunar_data
+
+    # No calendar loaded
+    if not config.calendar_data:
+        return False
+
+    # Validate phase index
+    if phase_index < 0 or phase_index > 7:
+        return False
+
+    cycle_length = config.calendar_data.get('lunar_cycle_length', 27)
+    blood_moon_chance = config.calendar_data.get('blood_moon_chance', 10)
+
+    # Calculate starting day for this phase
+    lunar_day = get_phase_start_day(phase_index, cycle_length)
+
+    # Check if setting to full moon - roll for blood moon
+    is_blood_moon = False
+    if phase_index == FULL_MOON_PHASE_INDEX:
+        roll = random.randint(1, 100)
+        is_blood_moon = roll <= blood_moon_chance
+        verbose_print(f"Setting to Full Moon. Blood moon roll: {roll} <= {blood_moon_chance}? {is_blood_moon}")
+
+    # Save lunar data
+    return save_lunar_data(lunar_day, is_blood_moon)
+
+
+def adjust_lunar_day(delta: int) -> bool:
+    """
+    Adjust the lunar day by a delta (positive or negative).
+
+    Handles wrapping at cycle boundaries.
+
+    Args:
+        delta: Amount to adjust (+1 or -1 typically)
+
+    Returns:
+        True if successful, False if no calendar or save failed
+
+    Example:
+        adjust_lunar_day(1)   # Advance by 1
+        adjust_lunar_day(-1)  # Go back by 1
+    """
+    import config  # Lazy import to avoid circular dependency
+    from data_loader import save_lunar_data
+
+    # No calendar loaded
+    if not config.calendar_data:
+        return False
+
+    # Get current lunar data
+    lunar_day = config.calendar_data.get('lunar_day')
+    cycle_length = config.calendar_data.get('lunar_cycle_length', 27)
+    blood_moon_chance = config.calendar_data.get('blood_moon_chance', 10)
+    is_blood_moon = config.calendar_data.get('is_blood_moon', False)
+
+    # If lunar_day not set, initialize to 1
+    if lunar_day is None:
+        lunar_day = 1
+
+    # Get phase before adjusting
+    old_phase = get_moon_phase_for_day(lunar_day, cycle_length)
+
+    # Adjust lunar day
+    lunar_day += delta
+
+    # Handle wrapping
+    if lunar_day < 1:
+        lunar_day = cycle_length + lunar_day  # Wrap backwards
+    elif lunar_day > cycle_length:
+        lunar_day = lunar_day - cycle_length  # Wrap forwards
+
+    # Get phase after adjusting
+    new_phase = get_moon_phase_for_day(lunar_day, cycle_length)
+
+    # Check if we entered full moon phase
+    if new_phase['is_full_moon'] and not old_phase['is_full_moon']:
+        # Roll for blood moon
+        roll = random.randint(1, 100)
+        is_blood_moon = roll <= blood_moon_chance
+        verbose_print(f"Entering Full Moon phase. Blood moon roll: {roll} <= {blood_moon_chance}? {is_blood_moon}")
+    elif not new_phase['is_full_moon']:
+        # Clear blood moon status when leaving full moon
+        is_blood_moon = False
+
+    # Save lunar data
+    return save_lunar_data(lunar_day, is_blood_moon)
+
+
+def initialize_lunar_day() -> bool:
+    """
+    Initialize lunar day to a random value if not already set.
+
+    Returns:
+        True if initialized or already set, False if no calendar or save failed
+
+    Example:
+        initialize_lunar_day()  # Sets random lunar day if null
+    """
+    import config  # Lazy import to avoid circular dependency
+    from data_loader import save_lunar_data
+
+    # No calendar loaded
+    if not config.calendar_data:
+        return False
+
+    # Check if already set
+    lunar_day = config.calendar_data.get('lunar_day')
+    if lunar_day is not None:
+        return True  # Already initialized
+
+    # Randomize lunar day
+    cycle_length = config.calendar_data.get('lunar_cycle_length', 27)
+    blood_moon_chance = config.calendar_data.get('blood_moon_chance', 10)
+
+    lunar_day = random.randint(1, cycle_length)
+
+    # Check if we landed on full moon - roll for blood moon
+    phase = get_moon_phase_for_day(lunar_day, cycle_length)
+    is_blood_moon = False
+    if phase['is_full_moon']:
+        roll = random.randint(1, 100)
+        is_blood_moon = roll <= blood_moon_chance
+        verbose_print(f"Initialized to Full Moon. Blood moon roll: {roll} <= {blood_moon_chance}? {is_blood_moon}")
+
+    verbose_print(f"Initialized lunar day to {lunar_day} ({phase['name']})")
+
+    # Save lunar data
+    return save_lunar_data(lunar_day, is_blood_moon)

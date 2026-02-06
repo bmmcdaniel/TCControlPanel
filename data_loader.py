@@ -12,6 +12,8 @@ Functions:
 - load_weather_by_season_excel() -> bool: Load weather weights by season from Excel
 - generate_encounter_by_zone_and_watch() -> xr.DataArray: Create 3D encounter array
 - validate_data() -> List[str]: Validate all loaded data for consistency
+- save_calendar_date(month, day) -> bool: Save current date to calendar YAML
+- save_lunar_data(lunar_day, is_blood_moon) -> bool: Save lunar data to calendar YAML
 
 Classes: None
 """
@@ -555,4 +557,49 @@ def save_calendar_date(month: int, day: int) -> bool:
 
     except Exception as e:
         log_error(f"Error saving calendar date: {e}")
+        return False
+
+
+def save_lunar_data(lunar_day: int, is_blood_moon: bool) -> bool:
+    """
+    Save lunar day and blood moon status to the calendar YAML file.
+
+    This function updates the lunar_day and is_blood_moon in the calendar file,
+    preserving all other calendar data.
+
+    Args:
+        lunar_day: Current day in lunar cycle (1 to lunar_cycle_length)
+        is_blood_moon: Whether current full moon is a blood moon
+
+    Returns:
+        True if successful, False otherwise
+    """
+    if not config.calendar_file or not config.calendar_data:
+        log_warning("Cannot save lunar data - no calendar loaded")
+        return False
+
+    try:
+        # Update in-memory calendar data
+        config.calendar_data['lunar_day'] = lunar_day
+        config.calendar_data['is_blood_moon'] = is_blood_moon
+
+        # Read the full file to preserve structure and comments
+        with open(config.calendar_file, 'r', encoding='utf-8') as f:
+            file_data = yaml.safe_load(f)
+
+        # Update lunar data in file data
+        file_data['calendar']['lunar_day'] = lunar_day
+        file_data['calendar']['is_blood_moon'] = is_blood_moon
+
+        # Write back to file
+        with open(config.calendar_file, 'w', encoding='utf-8') as f:
+            yaml.dump(file_data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+        log_info(f"Saved lunar data: day {lunar_day}, blood_moon {is_blood_moon}")
+        verbose_print(f"Lunar data saved: day {lunar_day}, blood_moon {is_blood_moon}")
+
+        return True
+
+    except Exception as e:
+        log_error(f"Error saving lunar data: {e}")
         return False

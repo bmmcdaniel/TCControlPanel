@@ -18,7 +18,9 @@ import config
 from logger import setup_logging, log_info, log_error
 from utils import (
     set_verbose_mode, verbose_print, format_time_display,
-    get_calendar_date_string, get_current_season, advance_calendar_date, get_current_holiday
+    get_calendar_date_string, get_current_season, advance_calendar_date, get_current_holiday,
+    get_moon_phase_info, advance_lunar_day, set_lunar_day_to_phase, adjust_lunar_day,
+    initialize_lunar_day, MOON_PHASES
 )
 from data_loader import load_all_data, save_calendar_date
 from overland_logic import (
@@ -197,12 +199,16 @@ def overland_content():
         # Advance calendar date if calendar with date is active
         if has_calendar_date:
             advance_calendar_date(1)
+            # Advance lunar day if lunar tracking is active
+            if config.calendar_data.get('lunar_cycle_length'):
+                advance_lunar_day(1)
             # Update season from calendar (in case month changed)
             new_season = get_current_season()
             if new_season and new_season in config.seasons_list:
                 config.selected_overland_season = new_season
         overland_new_day()
         overland_content.refresh()
+        calendar_content.refresh()
 
     with ui.row().classes('gap-2 mt-1 mb-1'):
         ui.button('New Day', on_click=handle_new_day)
@@ -216,15 +222,20 @@ def overland_content():
     if has_calendar:
         date_string = get_calendar_date_string()
         if date_string:
-            # Parse to emphasize only month name: "Deepwinter 15 (Winter)"
-            # Month name is the first word
-            parts = date_string.split(' ', 1)
-            if len(parts) >= 2:
-                month_name = parts[0]
-                rest = parts[1]
-                ui.html(f'<span class="emphasis">{month_name}</span> {rest}', sanitize=False).classes('mt-0 mb-0 ml-4')
-            else:
-                ui.label(date_string).classes('mt-0 mb-0 ml-4')
+            # Build date + moon phase display
+            date_html = date_string
+
+            # Add moon phase if available
+            moon_phase = get_moon_phase_info()
+            if moon_phase:
+                if moon_phase.get('is_blood_moon'):
+                    # Blood moon with special styling
+                    moon_html = f'&nbsp;&nbsp;<span class="blood-moon"></span> <span style="color: #cc2222;">{moon_phase["name"]}</span>'
+                else:
+                    moon_html = f'&nbsp;&nbsp;{moon_phase["icon"]} {moon_phase["name"]}'
+                date_html += moon_html
+
+            ui.html(date_html, sanitize=False).classes('mt-0 mb-0 ml-4')
 
             # Holiday display (if current date is a holiday)
             current_holiday = get_current_holiday()
@@ -389,6 +400,10 @@ def calendar_content():
         ui.label('No calendar loaded').classes('text-gray-500')
         return
 
+    # Initialize lunar day if calendar has lunar settings but no lunar_day yet
+    if config.calendar_data.get('lunar_cycle_length') and config.calendar_data.get('lunar_day') is None:
+        initialize_lunar_day()
+
     # Get calendar info
     months = config.calendar_data.get('months', [])
     holidays = config.calendar_data.get('holidays', [])
@@ -401,17 +416,21 @@ def calendar_content():
         key = (holiday.get('month'), holiday.get('day'))
         holiday_lookup[key] = holiday
 
-    # Current date display at top (with emphasized month name)
+    # Current date display at top
     date_string = get_calendar_date_string()
     if date_string:
-        # Parse to emphasize month name: "Deepwinter 15 (Winter)" -> emphasized "Deepwinter"
-        parts = date_string.split(' ', 1)
-        if len(parts) >= 2 and not date_string.startswith("No date"):
-            month_name = parts[0]
-            rest = parts[1]
-            ui.html(f'<span class="emphasis">{month_name}</span> {rest}', sanitize=False).classes('text-lg font-bold mt-0 mb-0')
-        else:
-            ui.label(date_string).classes('text-lg font-bold mt-0 mb-0')
+        date_html = date_string
+
+        # Add moon phase if available
+        moon_phase = get_moon_phase_info()
+        if moon_phase:
+            if moon_phase.get('is_blood_moon'):
+                moon_html = f'&nbsp;&nbsp;<span class="blood-moon"></span> <span style="color: #cc2222;">{moon_phase["name"]}</span>'
+            else:
+                moon_html = f'&nbsp;&nbsp;{moon_phase["icon"]} {moon_phase["name"]}'
+            date_html += moon_html
+
+        ui.html(date_html, sanitize=False).classes('text-lg font-bold mt-0 mb-0')
 
     # If current date is a holiday, show holiday info
     current_holiday = get_current_holiday()
@@ -462,6 +481,43 @@ def calendar_content():
                 if is_holiday:
                     holiday_info = holiday_lookup[(month_name, day)]
                     btn.tooltip(holiday_info.get('name', ''))
+
+    # Lunar phase selector (if lunar tracking is enabled)
+    if config.calendar_data.get('lunar_cycle_length'):
+        moon_phase = get_moon_phase_info()
+        current_phase_index = moon_phase['phase_index'] if moon_phase else -1
+
+        with ui.row().classes('items-center gap-1 mt-2 mb-1'):
+            ui.label('Lunar Phase:').classes('mr-2')
+
+            # Minus button
+            def handle_lunar_minus():
+                adjust_lunar_day(-1)
+                calendar_content.refresh()
+                overland_content.refresh()
+            ui.button('−', on_click=handle_lunar_minus).props('flat dense').classes('lunar-phase-btn')
+
+            # Phase icon buttons
+            for idx, phase in enumerate(MOON_PHASES):
+                def make_phase_handler(phase_idx=idx):
+                    def handler():
+                        set_lunar_day_to_phase(phase_idx)
+                        calendar_content.refresh()
+                        overland_content.refresh()
+                    return handler
+
+                btn_classes = 'lunar-phase-btn'
+                if idx == current_phase_index:
+                    btn_classes += ' lunar-phase-current'
+
+                ui.button(phase['icon'], on_click=make_phase_handler()).props('flat dense').classes(btn_classes).tooltip(phase['name'])
+
+            # Plus button
+            def handle_lunar_plus():
+                adjust_lunar_day(1)
+                calendar_content.refresh()
+                overland_content.refresh()
+            ui.button('+', on_click=handle_lunar_plus).props('flat dense').classes('lunar-phase-btn')
 
     ui.separator().classes('my-2')
 
@@ -584,7 +640,8 @@ def index():
                 padding: 0.2rem !important;
                 margin: 1px !important;
             }
-            .calendar-day-current {
+            .calendar-day-current,
+            .calendar-day-current .q-btn__content {
                 color: #F78080 !important;
                 font-weight: bold !important;
             }
@@ -595,6 +652,50 @@ def index():
                 font-weight: bold;
                 margin-top: 0.5rem;
                 margin-bottom: 0.2rem;
+            }
+
+            /* Blood Moon styles - layered CSS technique */
+            .blood-moon {
+                position: relative;
+                display: inline-block;
+                width: 1em;
+                height: 1em;
+                filter: contrast(1.4);
+                vertical-align: middle;
+                line-height: 1;
+            }
+            .blood-moon::before {
+                content: "🌕";
+                position: absolute;
+                top: -0.1em;
+                left: 0;
+                filter: grayscale(0.95);
+                z-index: 1;
+            }
+            .blood-moon::after {
+                content: "🌕";
+                position: absolute;
+                top: -0.1em;
+                left: 0;
+                z-index: 2;
+                color: transparent;
+                -webkit-background-clip: text;
+                background-clip: text;
+                background-color: rgba(255, 0, 0, 0.5);
+                pointer-events: none;
+            }
+
+            /* Lunar phase selector styles */
+            .lunar-phase-btn {
+                min-width: 2rem !important;
+                min-height: 2rem !important;
+                padding: 0.1rem !important;
+                margin: 0 !important;
+                font-size: 1.2rem !important;
+            }
+            .lunar-phase-current {
+                background-color: rgba(247, 128, 128, 0.3) !important;
+                border: 1px solid #F78080 !important;
             }
         </style>
     ''')

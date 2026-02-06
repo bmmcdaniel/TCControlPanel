@@ -1,6 +1,6 @@
 # Torchcrawl GM Control Panel - Complete Specification
 
-**Version:** 2.1 (NiceGUI + Calendar)
+**Version:** 2.2 (NiceGUI + Calendar + Moon Phases)
 **Date:** February 5, 2026
 **Framework:** NiceGUI 1.4+
 **Language:** Python 3.9+
@@ -30,7 +30,7 @@ A game master control panel for the Torchcrawl tabletop RPG system that generate
 ### 1.2 Key Features
 - **Overland Mode:** Day-by-day travel with weather, encounters (6 per day), and rest checks
 - **Site Mode:** 10-minute turn tracking with encounters (current + 5 future slots) and timers
-- **Calendar System:** Optional fantasy calendar with date tracking, holidays, and auto-season detection
+- **Calendar System:** Optional fantasy calendar with date tracking, holidays, auto-season detection, and moon phases
 - **Data-Driven:** All encounters, weather, zones loaded from YAML/Excel files
 - **Persistent State:** Expansion states preserved when encounters shift
 - **Responsive UI:** Ultra-compact spacing, dark mode, emphasis colors
@@ -251,7 +251,7 @@ dark.auto()  # Follow system preference
 **Layout (with calendar date set):**
 ```
 ┌─────────────────────────────────┐
-│ Current Date: Deepwinter 15 (Winter)                            │
+│ Current Date: Deepwinter 15 (Winter)  🌒 Waxing Crescent        │
 │ Zone: [Dropdown ▼] Overlay: [Dropdown ▼]                        │
 │ [Generate] [Reset] [New Day]                                     │
 └─────────────────────────────────┘
@@ -269,6 +269,10 @@ dark.auto()  # Follow system preference
 - Date display: Only shown when calendar has current_date set
   - Month name emphasized in coral pink
   - Format: `<span class="emphasis">{month}</span> {day} ({season})`
+- Moon phase display: Only shown when calendar has lunar_day set
+  - Shows unicode moon icon + phase name
+  - Format: `🌒 Waxing Crescent` (or `🌕 Full Moon`, etc.)
+  - Blood Moon: Icon uses layered CSS technique (grayscale + red overlay), text in red
 - Zone dropdown: Required, no default
 - Overlay dropdown: Optional, "None" default
 - Season dropdown: Conditional
@@ -607,23 +611,101 @@ Encounters
 Calendar: Torchcrawl Standard Calendar
 A simple 10-month fantasy calendar with 300 days per year
 
-Current Date: Deepwinter 15 (Winter)
+Current Date: Deepwinter 15 (Winter)  🌒 Waxing Crescent
               ^^^^^^^^^^
               emphasized (coral pink)
+
+Lunar Phase: [-] 🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘 [+]
 ```
 
 **Layout:**
 ```
 ui.label(calendar_name)              # Calendar name (bold)
 ui.label(description)                # Calendar description
-ui.html(date_string)                 # Current date with emphasis
+ui.html(date_string)                 # Current date with emphasis + moon phase
 ```
 
 **Date Display Modes:**
-- **Date set:** `<span class="emphasis">{month}</span> {day} ({season})`
+- **Date set:** `<span class="emphasis">{month}</span> {day} ({season})  {moon_icon} {phase_name}`
 - **No date set:** "No date set - set date via calendar below"
+- **Blood Moon:** Moon icon uses CSS filter, "Blood Moon" text in red
 
-#### 5.3.2 Holiday Display
+#### 5.3.2 Lunar Phase Selector
+
+**Structure:**
+```
+Lunar Phase: [-] 🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘 [+]
+```
+
+**Layout:**
+```
+ui.row:
+    ui.label("Lunar Phase:")
+    ui.button("−")                   # Decrease lunar_day
+    for phase in phases:
+        ui.button(phase_icon)        # Set to this phase
+    ui.button("+")                   # Increase lunar_day
+```
+
+**Behavior:**
+- **Phase icon buttons:** Click to set lunar_day to the start of that phase
+- **[-] button:** Decrease lunar_day by 1 (wraps from 1 to lunar_cycle_length)
+- **[+] button:** Increase lunar_day by 1 (wraps from lunar_cycle_length to 1)
+- Changes are saved to calendar file immediately
+- If setting to full moon phase, blood moon is rolled
+
+**Phase Icons:**
+| Phase | Icon | Days (27-day cycle) |
+|-------|------|---------------------|
+| New Moon | 🌑 | ~3-4 days |
+| Waxing Crescent | 🌒 | ~3-4 days |
+| First Quarter | 🌓 | ~3-4 days |
+| Waxing Gibbous | 🌔 | ~3-4 days |
+| Full Moon | 🌕 | ~3-4 days |
+| Waning Gibbous | 🌖 | ~3-4 days |
+| Last Quarter | 🌗 | ~3-4 days |
+| Waning Crescent | 🌘 | ~3-4 days |
+
+**Blood Moon Display:**
+- Uses layered CSS technique for red-tinted moon icon
+- Text "Blood Moon" displayed in red (#cc2222)
+
+**Blood Moon CSS (layered technique):**
+```css
+.blood-moon {
+  position: relative;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  filter: contrast(1.4);
+}
+
+/* Bottom layer: desaturated moon */
+.blood-moon::before {
+  content: "🌕";
+  position: absolute;
+  top: 0;
+  left: 0;
+  filter: grayscale(0.95);
+  z-index: 1;
+}
+
+/* Top layer: red tint overlay */
+.blood-moon::after {
+  content: "🌕";
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-color: rgba(255, 0, 0, 0.5);
+  pointer-events: none;
+}
+```
+
+#### 5.3.3 Holiday Display
 
 **Structure (when current date is a holiday):**
 ```
@@ -638,7 +720,7 @@ if get_current_holiday():
     ui.label(holiday['description'], ml-4)         # Indented
 ```
 
-#### 5.3.3 Month Grid
+#### 5.3.4 Month Grid
 
 **Structure:**
 ```
@@ -677,7 +759,7 @@ ui.grid(columns=days_per_week):           # Grid with configured columns
 - Columns determined by `calendar_data['days_per_week']` (default 6)
 - Rows automatically calculated based on days in month
 
-#### 5.3.4 Calendar Data Requirements
+#### 5.3.5 Calendar Data Requirements
 
 **Required fields in calendar YAML:**
 - `name`: Calendar display name
@@ -686,6 +768,12 @@ ui.grid(columns=days_per_week):           # Grid with configured columns
 - `current_date`: Object with `month` (1-based) and `day`, or null
 - `months`: List of month objects with `name`, `days`, `season`
 - `holidays`: List of holiday objects with `name`, `description`, `month` (name), `day`
+
+**Lunar phase fields (optional):**
+- `lunar_cycle_length`: Days in lunar cycle (e.g., 27)
+- `blood_moon_chance`: Percent chance of blood moon on full moon (e.g., 10)
+- `lunar_day`: Current position in cycle (1 to lunar_cycle_length), or null
+- `is_blood_moon`: Whether current full moon is a blood moon (true/false)
 
 ### 5.4 CSS Styling
 
@@ -1012,15 +1100,30 @@ config.generated_site_timers = [
 - ✅ Grid columns based on days_per_week
 - ✅ Click day to set current date
 - ✅ Current date highlighted in grid
+- ✅ Lunar phase selector with [-] icons [+] buttons
+
+**Moon Phase System:**
+- ✅ 8 phases: New Moon, Waxing Crescent, First Quarter, Waxing Gibbous, Full Moon, Waning Gibbous, Last Quarter, Waning Crescent
+- ✅ Unicode icons: 🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘
+- ✅ Configurable lunar cycle length (default 27 days)
+- ✅ Phases roughly equal duration
+- ✅ Lunar day advances with calendar day
+- ✅ Blood moon chance on full moon (configurable, default 10%)
+- ✅ Blood moon result saved to file
+- ✅ Blood moon icon with red CSS filter
+- ✅ Manual lunar phase adjustment via selector
 
 **Overland Integration:**
 - ✅ Date display when calendar date set
+- ✅ Moon phase display next to date
 - ✅ Auto-season detection from current month
 - ✅ Conditional Season dropdown (hidden when auto-detected)
-- ✅ New Day button to advance calendar
+- ✅ New Day button to advance calendar and lunar day
 
 **Data Persistence:**
 - ✅ Current date saved to calendar YAML file
+- ✅ Lunar day saved to calendar YAML file
+- ✅ Blood moon status saved to calendar YAML file
 - ✅ Date persists across application restarts
 - ✅ Calendar file path configurable in Test Data Files.yaml
 
@@ -1408,6 +1511,10 @@ calendar:
   current_date:
     month: 1
     day: 15
+  lunar_cycle_length: 27
+  blood_moon_chance: 10
+  lunar_day: null
+  is_blood_moon: false
   months:
     - name: "Deepwinter"
       days: 30
@@ -1440,6 +1547,15 @@ calendar:
   - `description`: String - Holiday description
   - `month`: String - Month name (must match a month name)
   - `day`: Integer - Day of month
+
+**Lunar Phase Fields (optional):**
+- `lunar_cycle_length`: Integer - Days in one lunar cycle (e.g., 27)
+- `blood_moon_chance`: Integer - Percent chance of blood moon on full moon (e.g., 10)
+- `lunar_day`: Integer or null - Current position in lunar cycle (1 to lunar_cycle_length)
+  - If null on first load, randomized to a starting position
+- `is_blood_moon`: Boolean - Whether current full moon is a blood moon
+  - Only meaningful when lunar_day is in full moon phase
+  - Rolled when entering full moon phase, saved until next cycle
 
 **Configuration:**
 Calendar file path is specified in `Test Data Files.yaml`:
@@ -1513,6 +1629,26 @@ files:
 - **Decision:** Timer form hidden by default, toggled with +/- button
 - **Rationale:** Reduces visual clutter until user needs to add timer
 - **Implementation:** `show_timer_form` initialized to False in `index()`
+
+**9. Moon Phases with Roughly Equal Duration:**
+- **Decision:** Distribute lunar cycle days roughly equally across 8 phases
+- **Rationale:** More natural lunar cycle feel than arbitrary phase lengths
+- **Implementation:** Calculate phase from lunar_day using cycle_length / 8
+
+**10. Blood Moon Rolled Once Per Full Moon:**
+- **Decision:** Roll for blood moon when entering full moon phase, save result
+- **Rationale:** Blood moon should be memorable event, not flickering on/off
+- **Implementation:** Check if entering full moon phase, roll once, save `is_blood_moon` to file
+
+**11. Blood Moon Icon Using Layered CSS:**
+- **Decision:** Use layered CSS technique with grayscale base + red overlay
+- **Rationale:** Produces true red color without orange tint from emoji base color
+- **Implementation:** Two pseudo-elements (::before grayscale, ::after red overlay) with contrast filter on container
+
+**12. Lunar Day Randomized on First Load:**
+- **Decision:** When lunar_day is null, randomize to a position in the cycle
+- **Rationale:** More interesting than always starting at new moon
+- **Implementation:** `random.randint(1, lunar_cycle_length)` if lunar_day is null
 
 ---
 
@@ -1593,6 +1729,22 @@ files:
 - [ ] Date changes persist across page refresh
 - [ ] Date changes reflect immediately in Overland tab
 
+**Moon Phases:**
+- [ ] Moon phase displays next to date (Calendar tab and Overland tab)
+- [ ] Correct unicode icon for each phase (🌑🌒🌓🌔🌕🌖🌗🌘)
+- [ ] Phase name displays correctly
+- [ ] Lunar phase selector shows all 8 phase icons
+- [ ] Click phase icon sets lunar_day to that phase
+- [ ] [-] button decreases lunar_day (wraps correctly)
+- [ ] [+] button increases lunar_day (wraps correctly)
+- [ ] Lunar day advances when calendar day advances (New Day)
+- [ ] Blood moon rolled when entering full moon phase
+- [ ] Blood moon icon has red CSS filter applied
+- [ ] Blood moon text displays in red
+- [ ] Blood moon status persists until next lunar cycle
+- [ ] Lunar day randomized on first load if null
+- [ ] Lunar day persists across page refresh
+
 **UI:**
 - [ ] Dark mode follows system preference
 - [ ] Tabs left-aligned, normal case
@@ -1644,10 +1796,26 @@ files:
 **Current Date:** The in-game date set in the calendar (stored in calendar YAML file)
 **Holiday:** Special day in the calendar with name and description
 **Auto-Season:** Season automatically detected from current calendar month
+**Lunar Cycle:** The repeating cycle of moon phases (default 27 days)
+**Lunar Day:** Current position in the lunar cycle (1 to lunar_cycle_length)
+**Moon Phase:** One of 8 phases: New Moon, Waxing Crescent, First Quarter, Waxing Gibbous, Full Moon, Waning Gibbous, Last Quarter, Waning Crescent
+**Blood Moon:** A rare full moon with red appearance (chance configured in calendar file)
 
 ---
 
 ## 15. Revision History
+
+**Version 2.2 - February 5, 2026:**
+- Added moon phase tracking system
+- 8 moon phases with unicode icons (🌑🌒🌓🌔🌕🌖🌗🌘)
+- Configurable lunar cycle length (default 27 days)
+- Blood moon feature with configurable chance (default 10%)
+- Blood moon display with red CSS filter on icon
+- Lunar phase selector on Calendar tab ([-] icons [+])
+- Moon phase displays on both Calendar and Overland tabs
+- Lunar day advances with calendar day
+- Lunar day randomized on first load if not set
+- Blood moon status persists until next lunar cycle
 
 **Version 2.1 - February 5, 2026:**
 - Added optional Calendar system with fantasy calendar support

@@ -3,8 +3,12 @@ calendar:
   description: A simple 10-month fantasy calendar with 300 days per year
   days_per_week: 6
   current_date:
-    month: 1
-    day: 15
+    month: 5
+    day: 29
+  lunar_cycle_length: 27
+  blood_moon_chance: 40
+  lunar_day: 15
+  is_blood_moon: false
   months:
   - name: Deepwinter
     days: 30
