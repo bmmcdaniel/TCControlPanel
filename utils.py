@@ -216,14 +216,14 @@ def get_calendar_date_string() -> str:
     if not config.calendar_data:
         return ""
 
-    # Calendar loaded but no date set
-    current_date = config.calendar_data.get('current_date')
-    if not current_date:
+    # Calendar loaded but no current state set
+    current = config.calendar_data.get('current')
+    if not current:
         return "No date set - set date via Calendar tab"
 
     # Get month and day
-    month_idx = current_date.get('month', 1)
-    day = current_date.get('day', 1)
+    month_idx = current.get('calendar_month', 1)
+    day = current.get('calendar_day', 1)
 
     # Get month info
     months = config.calendar_data.get('months', [])
@@ -255,13 +255,13 @@ def get_current_season() -> str:
     if not config.calendar_data:
         return ""
 
-    # No date set
-    current_date = config.calendar_data.get('current_date')
-    if not current_date:
+    # No current state set
+    current = config.calendar_data.get('current')
+    if not current:
         return ""
 
     # Get month index
-    month_idx = current_date.get('month', 1)
+    month_idx = current.get('calendar_month', 1)
 
     # Get month info
     months = config.calendar_data.get('months', [])
@@ -300,14 +300,14 @@ def advance_calendar_date(days: int = 1) -> bool:
     if not config.calendar_data:
         return False
 
-    # No date set - cannot advance
-    current_date = config.calendar_data.get('current_date')
-    if not current_date:
+    # No current state set - cannot advance
+    current = config.calendar_data.get('current')
+    if not current:
         return False
 
     # Get current position
-    month = current_date.get('month', 1)
-    day = current_date.get('day', 1)
+    month = current.get('calendar_month', 1)
+    day = current.get('calendar_day', 1)
     months = config.calendar_data.get('months', [])
 
     if not months:
@@ -359,14 +359,14 @@ def get_current_holiday() -> Optional[Dict]:
     if not config.calendar_data:
         return None
 
-    # No date set
-    current_date = config.calendar_data.get('current_date')
-    if not current_date:
+    # No current state set
+    current = config.calendar_data.get('current')
+    if not current:
         return None
 
     # Get current month name and day
-    month_idx = current_date.get('month', 1)
-    day = current_date.get('day', 1)
+    month_idx = current.get('calendar_month', 1)
+    day = current.get('calendar_day', 1)
 
     months = config.calendar_data.get('months', [])
     if month_idx < 1 or month_idx > len(months):
@@ -459,11 +459,14 @@ def get_moon_phase_info() -> Optional[Dict]:
     if not config.calendar_data:
         return None
 
-    # Get lunar data
-    lunar_day = config.calendar_data.get('lunar_day')
+    # Get current state
+    current = config.calendar_data.get('current')
     cycle_length = config.calendar_data.get('lunar_cycle_length', 27)
 
-    # No lunar day set
+    # No current state or no lunar day set
+    if not current:
+        return None
+    lunar_day = current.get('lunar_day')
     if lunar_day is None:
         return None
 
@@ -471,7 +474,7 @@ def get_moon_phase_info() -> Optional[Dict]:
     phase_info = get_moon_phase_for_day(lunar_day, cycle_length)
 
     # Add blood moon status
-    is_blood_moon = config.calendar_data.get('is_blood_moon', False)
+    is_blood_moon = current.get('is_blood_moon', False)
     phase_info['is_blood_moon'] = is_blood_moon and phase_info['is_full_moon']
     phase_info['lunar_day'] = lunar_day
 
@@ -521,15 +524,16 @@ def advance_lunar_day(days: int = 1) -> bool:
     if not config.calendar_data:
         return False
 
-    # Get current lunar data
-    lunar_day = config.calendar_data.get('lunar_day')
+    # Get current state and lunar settings
+    current = config.calendar_data.get('current', {})
     cycle_length = config.calendar_data.get('lunar_cycle_length', 27)
     blood_moon_chance = config.calendar_data.get('blood_moon_chance', 10)
-    is_blood_moon = config.calendar_data.get('is_blood_moon', False)
+    lunar_day = current.get('lunar_day')
+    is_blood_moon = current.get('is_blood_moon', False)
 
     # If lunar_day not set, initialize it
     if lunar_day is None:
-        lunar_day = random.randint(1, cycle_length)
+        lunar_day = random.randint(1, int(cycle_length))
 
     # Get phase before advancing
     old_phase = get_moon_phase_for_day(lunar_day, cycle_length)
@@ -623,11 +627,12 @@ def adjust_lunar_day(delta: int) -> bool:
     if not config.calendar_data:
         return False
 
-    # Get current lunar data
-    lunar_day = config.calendar_data.get('lunar_day')
+    # Get current state and lunar settings
+    current = config.calendar_data.get('current', {})
     cycle_length = config.calendar_data.get('lunar_cycle_length', 27)
     blood_moon_chance = config.calendar_data.get('blood_moon_chance', 10)
-    is_blood_moon = config.calendar_data.get('is_blood_moon', False)
+    lunar_day = current.get('lunar_day')
+    is_blood_moon = current.get('is_blood_moon', False)
 
     # If lunar_day not set, initialize to 1
     if lunar_day is None:
@@ -680,7 +685,8 @@ def initialize_lunar_day() -> bool:
         return False
 
     # Check if already set
-    lunar_day = config.calendar_data.get('lunar_day')
+    current = config.calendar_data.get('current', {})
+    lunar_day = current.get('lunar_day')
     if lunar_day is not None:
         return True  # Already initialized
 
@@ -688,7 +694,7 @@ def initialize_lunar_day() -> bool:
     cycle_length = config.calendar_data.get('lunar_cycle_length', 27)
     blood_moon_chance = config.calendar_data.get('blood_moon_chance', 10)
 
-    lunar_day = random.randint(1, cycle_length)
+    lunar_day = random.randint(1, int(cycle_length))
 
     # Check if we landed on full moon - roll for blood moon
     phase = get_moon_phase_for_day(lunar_day, cycle_length)

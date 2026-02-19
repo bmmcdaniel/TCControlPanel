@@ -17,7 +17,7 @@ from nicegui import ui, app
 import config
 from logger import setup_logging, log_info, log_error
 from utils import (
-    set_verbose_mode, verbose_print, format_time_display,
+    set_verbose_mode, verbose_print, format_time_display, parse_percentage,
     get_calendar_date_string, get_current_season, advance_calendar_date, get_current_holiday,
     get_moon_phase_info, advance_lunar_day, set_lunar_day_to_phase, adjust_lunar_day,
     initialize_lunar_day, MOON_PHASES
@@ -44,7 +44,7 @@ def parse_arguments():
 def reset_expansion_states(mode: str = "all"):
     """Reset encounter expansion states."""
     if mode == "all" or mode == "overland":
-        for watch in config.OVERLAND_WATCHES:
+        for watch in config.watches_list:
             key = f"expanded_overland_{watch}"
             if key in app.storage.user:
                 app.storage.user[key] = False
@@ -156,7 +156,7 @@ def overland_content():
 
     # Determine calendar state
     has_calendar = config.calendar_data is not None
-    has_calendar_date = has_calendar and config.calendar_data.get('current_date') is not None
+    has_calendar_date = has_calendar and config.calendar_data.get('current') is not None
 
     # If calendar with date, auto-sync season from calendar
     if has_calendar_date:
@@ -173,7 +173,7 @@ def overland_content():
                 value=config.selected_overland_season,
                 label='Season'
             ).classes('flex-1')
-            season_select.on('change', lambda e: (setattr(config, 'selected_overland_season', e.value), overland_content.refresh()))
+            season_select.on('change', lambda e: (setattr(config, 'selected_overland_season', e.value), overland_content.refresh(), overland_probability_content.refresh()))
 
         zone_select = ui.select(
             options=config.overland_zones_list,
@@ -190,8 +190,8 @@ def overland_content():
         ).classes('flex-1')
 
         # Change handlers
-        zone_select.on('change', lambda e: (setattr(config, 'selected_overland_zone', e.value), overland_content.refresh()))
-        overlay_select.on('change', lambda e: (setattr(config, 'selected_overland_overlay', None if e.value == "None" else e.value), overland_content.refresh()))
+        zone_select.on('change', lambda e: (setattr(config, 'selected_overland_zone', e.value), overland_content.refresh(), overland_probability_content.refresh()))
+        overlay_select.on('change', lambda e: (setattr(config, 'selected_overland_overlay', None if e.value == "None" else e.value), overland_content.refresh(), overland_probability_content.refresh()))
 
     # Action buttons with calendar-aware New Day
     def handle_new_day():
@@ -266,7 +266,7 @@ def overland_content():
     # Encounters section
     ui.label('Encounters').classes('text-lg font-bold mt-0 mb-0')
     
-    for watch in config.OVERLAND_WATCHES:
+    for watch in config.watches_list:
         encounter = config.generated_overland_encounters.get(watch)
         if encounter:
             render_encounter(encounter, watch, "overland", overland_content)
@@ -318,7 +318,7 @@ def site_content():
             label='Site Zone'
         ).classes('flex-1')
         
-        zone_select.on('change', lambda e: (setattr(config, 'selected_site_zone', e.value), site_content.refresh()))
+        zone_select.on('change', lambda e: (setattr(config, 'selected_site_zone', e.value), site_content.refresh(), site_probability_content.refresh()))
     
     # Action buttons
     with ui.row().classes('gap-2 mt-1 mb-1'):
@@ -401,14 +401,15 @@ def calendar_content():
         return
 
     # Initialize lunar day if calendar has lunar settings but no lunar_day yet
-    if config.calendar_data.get('lunar_cycle_length') and config.calendar_data.get('lunar_day') is None:
+    current = config.calendar_data.get('current', {})
+    if config.calendar_data.get('lunar_cycle_length') and current.get('lunar_day') is None:
         initialize_lunar_day()
+        current = config.calendar_data.get('current', {})  # Refresh after initialization
 
     # Get calendar info
     months = config.calendar_data.get('months', [])
     holidays = config.calendar_data.get('holidays', [])
     days_per_week = config.calendar_data.get('days_per_week', 6)
-    current_date = config.calendar_data.get('current_date')
 
     # Build holiday lookup: (month_name, day) -> holiday
     holiday_lookup = {}
@@ -453,9 +454,9 @@ def calendar_content():
         with ui.grid(columns=days_per_week).classes('gap-0'):
             for day in range(1, days_in_month + 1):
                 # Determine styling
-                is_current = (current_date and
-                              current_date.get('month') == month_idx and
-                              current_date.get('day') == day)
+                is_current = (current and
+                              current.get('calendar_month') == month_idx and
+                              current.get('calendar_day') == day)
                 is_holiday = (month_name, day) in holiday_lookup
 
                 # Build CSS classes
@@ -544,6 +545,178 @@ def calendar_content():
                     label.tooltip(holiday.get('description', ''))
     else:
         ui.label('No holidays defined').classes('mt-0 mb-0 ml-4 text-gray-500')
+
+
+@ui.refreshable
+def site_probability_content():
+    """Refreshable Site probability distribution tab content."""
+
+    def handle_zone_change(e):
+        config.selected_site_zone = e.value
+        site_probability_content.refresh()
+        site_content.refresh()
+
+    # Zone dropdown (synced with site tab's zone)
+    with ui.row().classes('w-full mt-1 mb-1'):
+        ui.select(
+            options=config.site_zones_list,
+            value=config.selected_site_zone,
+            label='Site Zone',
+            on_change=handle_zone_change
+        ).classes('flex-1')
+
+    # Encounter chance
+    encounter_chance = parse_percentage(config.zones_data[config.selected_site_zone]['encounter_chance'])
+    ui.label(f'Encounter chance: {encounter_chance:.0%}').classes('mt-0 mb-0 ml-4')
+
+    ui.separator().classes('my-1')
+
+    # Build probability list from 2D array
+    weights = {}
+    for enc in config.encounter_by_zone.coords['Encounter'].values:
+        w = float(config.encounter_by_zone.loc[enc, config.selected_site_zone])
+        if w > 0:
+            weights[enc] = w
+    total = sum(weights.values())
+
+    # Sort descending, display
+    if total > 0:
+        sorted_encs = sorted(weights.items(), key=lambda x: x[1], reverse=True)
+        with ui.column().classes('mt-0 mb-0 ml-4'):
+            for name, w in sorted_encs:
+                pct = w / total * 100
+                ui.label(f'{name}: {pct:.1f}%').classes('mt-0 mb-0')
+    else:
+        ui.label('No encounters available for this zone').classes('mt-0 mb-0 ml-4 text-gray-500')
+
+
+@ui.refreshable
+def overland_probability_content():
+    """Refreshable Overland probability distribution tab content."""
+
+    def handle_zone_change(e):
+        config.selected_overland_zone = e.value
+        overland_probability_content.refresh()
+        overland_content.refresh()
+
+    def handle_overlay_change(e):
+        config.selected_overland_overlay = None if e.value == "None" else e.value
+        overland_probability_content.refresh()
+        overland_content.refresh()
+
+    def handle_season_change(e):
+        config.selected_overland_season = e.value
+        overland_probability_content.refresh()
+        overland_content.refresh()
+
+    def handle_watch_change(e):
+        config.selected_overland_watch = e.value
+        overland_probability_content.refresh()
+
+    # Four dropdowns in a row
+    with ui.row().classes('w-full gap-2 mt-1 mb-1'):
+        ui.select(
+            options=config.overland_zones_list,
+            value=config.selected_overland_zone,
+            label='Zone',
+            on_change=handle_zone_change
+        ).classes('flex-1')
+
+        overlay_options = ["None"] + config.overland_overlay_list
+        current_overlay = "None" if config.selected_overland_overlay is None else config.selected_overland_overlay
+        ui.select(
+            options=overlay_options,
+            value=current_overlay,
+            label='Overlay',
+            on_change=handle_overlay_change
+        ).classes('flex-1')
+
+        ui.select(
+            options=config.seasons_list,
+            value=config.selected_overland_season,
+            label='Season',
+            on_change=handle_season_change
+        ).classes('flex-1')
+
+        ui.select(
+            options=config.watches_list,
+            value=config.selected_overland_watch,
+            label='Watch',
+            on_change=handle_watch_change
+        ).classes('flex-1')
+
+    zone = config.selected_overland_zone
+    overlay = config.selected_overland_overlay
+    season = config.selected_overland_season
+    watch = config.selected_overland_watch
+
+    season_mod = parse_percentage(config.seasons_data[season]['encounter_modification'])
+
+    if overlay is None:
+        # No overlay - simple calculation
+        ec = parse_percentage(config.zones_data[zone]['encounter_chance']) * season_mod
+        ui.label(f'Encounter chance: {ec:.2%}').classes('mt-0 mb-0 ml-4')
+
+        ui.separator().classes('my-1')
+
+        # Build probability list from 4D array
+        weights = {}
+        for enc in config.encounter_by_zone_watch_and_season.coords['Encounter'].values:
+            w = float(config.encounter_by_zone_watch_and_season.loc[enc, zone, watch, season])
+            if w > 0:
+                weights[enc] = w
+        total = sum(weights.values())
+
+        if total > 0:
+            sorted_encs = sorted(weights.items(), key=lambda x: x[1], reverse=True)
+            with ui.column().classes('mt-0 mb-0 ml-4'):
+                for name, w in sorted_encs:
+                    pct = w / total * 100
+                    ui.label(f'{name}: {pct:.1f}%').classes('mt-0 mb-0')
+        else:
+            ui.label('No encounters available for this combination').classes('mt-0 mb-0 ml-4 text-gray-500')
+    else:
+        # Overlay - blended calculation
+        ec_base = parse_percentage(config.zones_data[zone]['encounter_chance']) * season_mod
+        ec_overlay = parse_percentage(config.zones_data[overlay]['encounter_chance']) * season_mod
+        blended_ec = 0.5 * ec_base + 0.5 * ec_overlay
+        ui.label(f'Encounter chance: {blended_ec:.2%}').classes('mt-0 mb-0 ml-4')
+
+        ui.separator().classes('my-1')
+
+        # Build weights for both zones
+        base_weights = {}
+        overlay_weights = {}
+        all_encounters = set()
+        for enc in config.encounter_by_zone_watch_and_season.coords['Encounter'].values:
+            w_base = float(config.encounter_by_zone_watch_and_season.loc[enc, zone, watch, season])
+            w_overlay = float(config.encounter_by_zone_watch_and_season.loc[enc, overlay, watch, season])
+            if w_base > 0:
+                base_weights[enc] = w_base
+                all_encounters.add(enc)
+            if w_overlay > 0:
+                overlay_weights[enc] = w_overlay
+                all_encounters.add(enc)
+
+        total_base = sum(base_weights.values())
+        total_overlay = sum(overlay_weights.values())
+
+        if all_encounters and blended_ec > 0:
+            # True conditional probability: P(E | encounter occurs)
+            blended_probs = {}
+            for enc in all_encounters:
+                p_base = (base_weights.get(enc, 0) / total_base) if total_base > 0 else 0
+                p_overlay = (overlay_weights.get(enc, 0) / total_overlay) if total_overlay > 0 else 0
+                blended_p = (0.5 * ec_base * p_base + 0.5 * ec_overlay * p_overlay) / blended_ec
+                if blended_p > 0:
+                    blended_probs[enc] = blended_p * 100
+
+            sorted_encs = sorted(blended_probs.items(), key=lambda x: x[1], reverse=True)
+            with ui.column().classes('mt-0 mb-0 ml-4'):
+                for name, pct in sorted_encs:
+                    ui.label(f'{name}: {pct:.1f}%').classes('mt-0 mb-0')
+        else:
+            ui.label('No encounters available for this combination').classes('mt-0 mb-0 ml-4 text-gray-500')
 
 
 def toggle_timer_form():
@@ -716,6 +889,8 @@ def index():
         site_tab = ui.tab('Site')
         if config.calendar_data:
             calendar_tab = ui.tab('Calendar')
+        site_prob_tab = ui.tab('Prob. Dist. Site')
+        overland_prob_tab = ui.tab('Prob. Dist. Overland')
 
     with ui.tab_panels(tabs, value=overland_tab).classes('w-full'):
         with ui.tab_panel(overland_tab):
@@ -727,6 +902,12 @@ def index():
         if config.calendar_data:
             with ui.tab_panel(calendar_tab):
                 calendar_content()
+
+        with ui.tab_panel(site_prob_tab):
+            site_probability_content()
+
+        with ui.tab_panel(overland_prob_tab):
+            overland_probability_content()
 
 
 def main():
@@ -759,6 +940,8 @@ def main():
         config.selected_overland_zone = config.overland_zones_list[0]
     if not config.selected_site_zone and config.site_zones_list:
         config.selected_site_zone = config.site_zones_list[0]
+    if not config.selected_overland_watch and config.watches_list:
+        config.selected_overland_watch = config.watches_list[0]
     
     verbose_print("=== Application Ready ===")
     

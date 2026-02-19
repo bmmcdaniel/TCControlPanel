@@ -1,7 +1,7 @@
 # Torchcrawl GM Control Panel - Complete Specification
 
-**Version:** 2.2 (NiceGUI + Calendar + Moon Phases)
-**Date:** February 5, 2026
+**Version:** 2.3 (NiceGUI + Calendar + Moon Phases + Seasonal Encounters)
+**Date:** February 12, 2026
 **Framework:** NiceGUI 1.4+
 **Language:** Python 3.9+
 
@@ -28,10 +28,10 @@
 A game master control panel for the Torchcrawl tabletop RPG system that generates and manages encounters, weather, timers, and rest checks for both overland travel and site-based exploration.
 
 ### 1.2 Key Features
-- **Overland Mode:** Day-by-day travel with weather, encounters (6 per day), and rest checks
+- **Overland Mode:** Day-by-day travel with weather, season-weighted encounters, and rest checks
 - **Site Mode:** 10-minute turn tracking with encounters (current + 5 future slots) and timers
 - **Calendar System:** Optional fantasy calendar with date tracking, holidays, auto-season detection, and moon phases
-- **Data-Driven:** All encounters, weather, zones loaded from YAML/Excel files
+- **Data-Driven:** All encounters, weather, zones, seasons, and watches loaded from YAML/Excel files
 - **Persistent State:** Expansion states preserved when encounters shift
 - **Responsive UI:** Ultra-compact spacing, dark mode, emphasis colors
 
@@ -98,18 +98,23 @@ app.py                 ← Main UI + Routing
 class Encounter:
     name: Optional[str]           # Encounter name (None = no encounter)
     time: Optional[str]           # Time of occurrence
-    sparks: List[str]             # Situation prompts (1-4 items)
+    sparks: List[str]             # Situation prompts (1-N items)
     description: Optional[str]    # Physical description
-    habitat: Optional[str]        # Environmental context
-    
+    habitat: Optional[List[str]]  # Applicable zones
+    habitat_notes: Optional[str]  # Special habitat notes
+    seasons: Union[str, Dict]     # "Any" or {season: percentage} dict
+
     def is_encounter() -> bool:
         """Returns True if name is not None"""
-    
-    def generate_overland_encounter(...):
-        """Generate for specific watch period"""
-    
-    def generate_site_encounter(...):
-        """Generate for specific time slot"""
+
+    def generate_overland_encounter(zone, overlay, watch, season,
+            encounters_data, encounter_by_zone_watch_and_season,
+            zones_data, seasons_data):
+        """Generate for specific watch period using 4D array with season"""
+
+    def generate_site_encounter(zone, time_slot,
+            encounters_data, encounter_by_zone, zones_data):
+        """Generate for specific time slot (no season modifier)"""
 ```
 
 **Source:** `Default Encounters.yaml`
@@ -378,7 +383,9 @@ ui.row (ml-4):                           # Indentation
 - Details column: `gap-0 mt-0 mb-0` + `padding: 0; margin: 0; gap: 0;`
 - Last spark: `margin-bottom: 0.3em`
 
-**Watches (6 per day):**
+**Watches (loaded dynamically from Default Watches.yaml):**
+
+Watch periods are not hardcoded. They are read from the watches YAML file at startup and flow dynamically throughout the application via `config.watches_list`. The default set is:
 1. Dawn
 2. Morning
 3. Afternoon
@@ -602,7 +609,7 @@ Encounters
 
 ### 5.3 Calendar Tab
 
-**Conditional Display:** Only visible when a calendar file is loaded (configured in Test Data Files.yaml)
+**Conditional Display:** Only visible when a calendar file is loaded (configured in Default Data Files.yaml)
 
 #### 5.3.1 Calendar Header
 
@@ -875,7 +882,7 @@ style="margin: 0; padding: 0; margin-left: 2em; line-height: 1.2;"
 2. Validate selections (all required fields)
 3. Generate days (random 1-6)
 4. Generate weather for season
-5. Generate 6 encounters (one per watch)
+5. Generate encounters (one per watch from config.watches_list)
 6. Generate rest info for season
 7. Log completion
 ```
@@ -890,23 +897,31 @@ style="margin: 0; padding: 0; margin-left: 2em; line-height: 1.2;"
 
 2. Get encounter_chance from active zone data
 
-3. Roll for encounter:
-   - Random 1-100
+3. Apply season encounter_modification:
+   - encounter_chance = zone_encounter_chance × season_encounter_modification
+   - Example: Mountains (18%) in Winter (40%) = 7.2% effective chance
+
+4. Roll for encounter:
+   - Random 0.0-1.0
    - If roll <= encounter_chance: generate encounter
    - Else: no encounter (name = None)
 
-4. If encounter:
-   a. Get weight table for (active_zone, watch)
-   b. Weighted random selection from encounters
-   c. Populate: name, description, habitat
-   d. Generate 1-4 sparks (random from encounter's sparks list)
+5. If encounter:
+   a. Get weight table from 4D array for (active_zone, watch, season)
+   b. Weights already incorporate per-encounter season percentages
+   c. Weighted random selection from encounters with weight > 0
+   d. Populate: name, description, habitat, all sparks
 
-5. Set encounter.time = watch
+6. Set encounter.time = watch
 ```
 
 **Source Tables:**
-- Encounter chance: `zones_data[zone]['encounter_chance']`
-- Weights: `encounter_by_zone_and_watch[zone, watch]`
+- Encounter chance: `zones_data[zone]['encounter_chance']` × `seasons_data[season]['encounter_modification']`
+- Weights: `encounter_by_zone_watch_and_season[encounter, zone, watch, season]`
+
+**Two-Level Season Effect:**
+- **Level 1 (encounter_modification):** From `Default Seasons.yaml`. Adjusts whether ANY encounter occurs at all. Applied multiplicatively to the zone's base encounter_chance. Overland only.
+- **Level 2 (per-encounter season %):** From `Default Encounters.yaml` `season` field. Adjusts the relative probability of WHICH encounter is selected. Baked into the 4D array at startup. An encounter with `Winter: 0%` can never appear in Winter.
 
 ---
 
@@ -1032,9 +1047,12 @@ config.generated_site_timers = [
 **Generation:**
 - ✅ Random days (1-6)
 - ✅ Weather by season
-- ✅ 6 encounters per day (by watch)
+- ✅ Encounters per day (one per watch, watches loaded from file)
 - ✅ 50/50 overlay system
 - ✅ Rest checks with DCs and modifiers
+- ✅ Season encounter_modification adjusts base encounter chance
+- ✅ Per-encounter season percentages weight which encounter is selected
+- ✅ 4D encounter probability array [Encounter, Zone, Watch, Season] precomputed at startup
 
 **Regeneration:**
 - ✅ Individual weather regeneration
@@ -1125,7 +1143,7 @@ config.generated_site_timers = [
 - ✅ Lunar day saved to calendar YAML file
 - ✅ Blood moon status saved to calendar YAML file
 - ✅ Date persists across application restarts
-- ✅ Calendar file path configurable in Test Data Files.yaml
+- ✅ Calendar file path configurable in Default Data Files.yaml
 
 ---
 
@@ -1140,10 +1158,11 @@ config.generated_site_timers = [
 - ✅ Clickable encounter names (no separate expand icon)
 
 **Data:**
-- ✅ YAML for encounters, weather, zones, rest info
+- ✅ YAML for encounters, weather, zones, seasons, watches, rest info
 - ✅ Excel for probabilities (weather by season, encounters by zone)
 - ✅ Weighted random selection
 - ✅ Human-readable, editable data files
+- ✅ All dimension sizes (encounters, zones, watches, seasons) set dynamically from data files
 
 **Code:**
 - ✅ Modular architecture (separate logic files)
@@ -1222,8 +1241,10 @@ torchcrawl_nicegui/
 ├── logs/                          # Runtime logs (created on first run)
 │   └── TCControlPanel.log
 └── Data/                          # Data files
-    ├── Test Data Files.yaml       # Configuration for data file paths
+    ├── Default Data Files.yaml    # Configuration for data file paths
     ├── Default Encounters.yaml
+    ├── Default Seasons.yaml       # Season definitions with encounter_modification
+    ├── Default Watches.yaml       # Watch period definitions
     ├── Default Weathers.yaml
     ├── Default Zones.yaml
     ├── Default Rest Info.yaml
@@ -1248,16 +1269,20 @@ torchcrawl_nicegui/
 
 **config.py:**
 - Global state variables
-- Constants (watches, time slots, file paths)
-- Loaded data storage
+- Constants (time slots)
+- Loaded data storage (including dynamically loaded watches and seasons lists)
 
 **data_loader.py:**
-- YAML file parsing
+- YAML file parsing (encounters, seasons, watches, zones, weathers, rest info, calendar)
 - Excel file parsing (with openpyxl)
-- xarray DataArray creation
-- Error handling for missing files
+- xarray DataArray creation (4D encounter array, 2D weather array)
+- `load_seasons_file()`: Load season definitions and encounter_modification values
+- `load_watches_file()`: Load watch period names dynamically
+- `generate_encounter_by_zone_watch_and_season()`: Build 4D encounter probability array
 - `load_calendar_file()`: Load calendar data (optional)
 - `save_calendar_date()`: Save current date to calendar YAML
+- Error handling for missing files
+- Data validation across all loaded files
 
 **overland_logic.py:**
 - `overland_generate()`: Full generation
@@ -1290,31 +1315,38 @@ torchcrawl_nicegui/
 
 ## 10. Configuration
 
-### 10.1 Constants (config.py)
+### 10.1 Constants and Dynamic Lists (config.py)
 
 ```python
-# Overland
-OVERLAND_WATCHES = [
-    "Dawn", "Morning", "Afternoon", 
-    "Dusk", "Early Night", "Late Night"
-]
-OVERLAND_SEASONS = ["Spring", "Summer", "Fall", "Winter"]
-
-# Site
+# Constants (hardcoded)
 SITE_TIME_SLOTS = [
-    "Current", "10 minutes", "20 minutes", 
+    "Current", "10 minutes", "20 minutes",
     "30 minutes", "40 minutes", "50 minutes"
 ]
 
-# File paths
-DATA_DIR = Path(__file__).parent / "data"
-ENCOUNTERS_FILE = DATA_DIR / "Default Encounters.yaml"
-WEATHERS_FILE = DATA_DIR / "Default Weathers.yaml"
-ZONES_FILE = DATA_DIR / "Default Zones.yaml"
-REST_INFO_FILE = DATA_DIR / "Default Rest Info.yaml"
-ENCOUNTERS_BY_ZONE_FILE = DATA_DIR / "Default Encounters By Zone.xlsx"
-WEATHER_BY_SEASON_FILE = DATA_DIR / "Default Weather By Season.xlsx"
+# Dynamic lists (loaded from YAML files at startup)
+seasons_list: List[str] = []           # From Default Seasons.yaml (e.g., ["Spring", "Summer", "Autumn", "Winter"])
+watches_list: List[str] = []           # From Default Watches.yaml (e.g., ["Dawn", "Morning", ...])
+watches_key_list: List[str] = []       # Lowercase keys derived from watches_list (e.g., ["dawn", "morning", ...])
+
+# Season data
+seasons_data: Dict[str, Dict] = {}    # Season name -> {encounter_modification: "85%"}
+                                       # encounter_modification adjusts overland encounter chance
+
+# File paths (loaded from Default Data Files.yaml)
+datafile_file: str = "Data/Default Data Files.yaml"  # Master config
+encounters_file: str = ""
+seasons_file: str = ""
+watches_file: str = ""
+zones_file: str = ""
+weathers_file: str = ""
+restinfo_file: str = ""
+encounter_by_zone_file: str = ""
+weather_by_season_file: str = ""
+calendar_file: str = ""
 ```
+
+**Note:** Watch periods are NO LONGER hardcoded. The former `OVERLAND_WATCHES` constant has been replaced by `watches_list`, which is loaded dynamically from the watches YAML file. This allows watch periods to be customized per campaign.
 
 ### 10.2 State Variables (config.py)
 
@@ -1335,20 +1367,34 @@ generated_site_time: int = 0
 generated_site_encounters: Dict[str, Encounter] = {}
 generated_site_timers: List[Timer] = []
 
-# Loaded data
-encounters_data: Dict = {}
-weathers_data: Dict = {}
-zones_data: Dict = {}
-rest_info_data: Dict = {}
-encounter_by_zone_and_watch: xr.DataArray = None
-encounter_by_zone: xr.DataArray = None
-weather_by_season: xr.DataArray = None
+# Loaded data from YAML
+encounters_data: Dict = {}             # Encounter name -> {description, habitat, sparks, watch, season}
+weathers_data: Dict = {}               # Weather name -> {effects}
+zones_data: Dict = {}                  # Zone name -> {types, encounter_chance}
+restinfo_data: Dict = {}               # Rest check tables and modifiers
+seasons_data: Dict = {}                # Season name -> {encounter_modification}
+
+# xarray DataArrays (multi-dimensional labeled arrays)
+encounter_by_zone: xr.DataArray = None                    # 2D: [Encounter, Zone] - for site encounters
+encounter_by_zone_watch_and_season: xr.DataArray = None   # 4D: [Encounter, Zone, Watch, Season] - for overland
+weather_by_season: xr.DataArray = None                    # 2D: [Weather, Season]
 
 # Calendar data (optional feature)
-calendar_file: str = ""                   # Path to calendar file (from Test Data Files.yaml)
+calendar_file: str = ""                   # Path to calendar file (from Default Data Files.yaml)
 calendar_data: Optional[Dict] = None      # Full calendar structure from YAML (includes current_date)
 calendar_month_lookup: Dict[str, int] = {}  # Month name -> 1-based index for quick lookups
 ```
+
+**4D Encounter Array (`encounter_by_zone_watch_and_season`):**
+- Dimensions: `[Encounter, Zone, Watch, Season]`
+- All dimension sizes are set dynamically from data files:
+  - **Encounter:** Names from `Default Encounters.yaml` (authoritative list)
+  - **Zone:** Column headers from `Default Encounters By Zone.xlsx`
+  - **Watch:** Names from `Default Watches.yaml`
+  - **Season:** Names from `Default Seasons.yaml`
+- Cell value = `zone_weight × watch_percentage × season_percentage`
+- Encounters in the YAML but not in the Excel get zone_weight = 0 (never selected)
+- Built once at startup by `generate_encounter_by_zone_watch_and_season()`
 
 ---
 
@@ -1359,9 +1405,12 @@ calendar_month_lookup: Dict[str, int] = {}  # Month name -> 1-based index for qu
 **Format:**
 ```yaml
 encounters:
-  - name: "Ankheg"
-    description: "12-foot tall mantis-like insect with powerful mandibles"
-    habitat: "Temperate forests and plains"
+  - name: Ankheg
+    description: "12-foot tall mantis-like insect; serrated arms; mandibles"
+    habitat: [Meadows, Rolling Hills]
+    habitat_notes: "Prefers dry and sandy plains with dirt suitable for burrowing."
+    watch: {dawn: 15%, morning: 30%, afternoon: 30%, dusk: 15%, early night: 5%, late night: 5%}
+    season: {Spring: 80%, Summer: 100%, Autumn: 60%, Winter: 0%}
     sparks:
       - "The adventuring company comes across the crumbling lip of a hole"
       - "An ankheg is digging a new pit-burrow"
@@ -1371,8 +1420,16 @@ encounters:
 **Fields:**
 - `name`: String (required) - Encounter name
 - `description`: String (optional) - Physical description
-- `habitat`: String (optional) - Environment context
+- `habitat`: List[String] (required) - Applicable zone names
+- `habitat_notes`: String (optional) - Special habitat notes
+- `watch`: Dict (required) - Watch period percentages as `{key: "X%"}`. Keys are lowercase watch names matching the watches file. Percentages control relative probability during each watch period.
+- `season`: Dict or String (required) - Season percentages. Two formats:
+  - Dict: `{Spring: 100%, Summer: 80%, Autumn: 100%, Winter: 80%}` — per-season percentage
+  - String: `All 100%` — shorthand for all seasons at the specified percentage
+  - Missing/null treated as all 100%
 - `sparks`: List[String] (required, 1-N items) - Situation prompts
+
+**Season Percentage Effect:** Multiplied into the 4D array at startup. An encounter with `Winter: 0%` will have weight 0 for all zones/watches in Winter and can never be selected. An encounter with `Winter: 50%` will be half as likely in Winter compared to a season where it has 100%.
 
 **Naming Convention:** Descriptive, proper case
 
@@ -1406,15 +1463,27 @@ weathers:
 **Format:**
 ```yaml
 zones:
-  - name: "Mirkwood"
-    encounter_chance: 40
-  - name: "Road"
-    encounter_chance: 20
+  - name: Meadows
+    types: [Overland]
+    encounter_chance: 10%
+
+  - name: Roads
+    types: [Overlay]
+    encounter_chance: 20%
+
+  - name: Settlements
+    types: [Site]
+    encounter_chance: 18%
+
+  - name: Ruins
+    types: [Overlay, Site]
+    encounter_chance: 25%
 ```
 
 **Fields:**
 - `name`: String (required) - Zone name
-- `encounter_chance`: Integer (required, 1-100) - Percent chance of encounter
+- `types`: List[String] (required) - Zone categories: `Overland`, `Overlay`, and/or `Site`
+- `encounter_chance`: String (required) - Base percent chance of encounter (e.g., "18%"). For overland zones, this is further modified by the season's `encounter_modification`.
 
 ---
 
@@ -1448,37 +1517,23 @@ rest_checks:
 
 ### 11.5 Default Encounters By Zone.xlsx
 
-**Sheet: "Overland"**
-
 **Format:**
 ```
-| Encounter | Mirkwood_Dawn | Mirkwood_Morning | ... | Road_Dawn | ... |
-|-----------|---------------|------------------|-----|-----------|-----|
-| Ankheg    | 10            | 5                | ... | 2         | ... |
-| Troll     | 8             | 12               | ... | 1         | ... |
+| Encounter       | Meadows | Rolling Hills | Mountains | Roads | Settlements | ... |
+|-----------------|---------|---------------|-----------|-------|-------------|-----|
+| Air Elemental   | 0       | 0             | 1         | 0     | 0           | ... |
+| Ankheg          | 1       | 1             | 0         | 0     | 0           | ... |
 ```
 
 **Dimensions:**
-- Rows: Encounter names (must match Encounters.yaml)
-- Columns: `{Zone}_{Watch}` combinations
-- Values: Integer weights (0 = never, higher = more likely)
+- Rows: Encounter names (subset of encounters in Default Encounters.yaml)
+- Columns: Zone names (must match Default Zones.yaml)
+- Values: Integer weights (0 = never appears in zone, higher = more likely)
 
-**Sheet: "Site"**
+**Relationship to 4D Array:**
+This Excel file provides the **zone_weight** component of the 4D array. The encounter list in the YAML is authoritative — encounters that appear in the YAML but not in this Excel file will have zone_weight = 0 for all zones (effectively never selected). The zone_weight is multiplied by watch_percentage (from encounter YAML) and season_percentage (from encounter YAML) to produce the final 4D array values.
 
-**Format:**
-```
-| Encounter | Mirkwood | Road | Ruins | ... |
-|-----------|----------|------|-------|-----|
-| Ankheg    | 10       | 2    | 0     | ... |
-| Troll     | 8        | 1    | 15    | ... |
-```
-
-**Dimensions:**
-- Rows: Encounter names
-- Columns: Zone names
-- Values: Integer weights
-
-**Note:** Site mode doesn't use watch-specific weights
+**Note:** This file provides base zone weights used by both overland (via 4D array) and site (via 2D array) encounter generation. Watch and season modifiers are applied only for overland.
 
 ---
 
@@ -1500,7 +1555,55 @@ rest_checks:
 
 ---
 
-### 11.7 Default Calendar.yaml (Optional)
+### 11.7 Default Seasons.yaml
+
+**Format:**
+```yaml
+seasons:
+  - name: Spring
+    encounter_modification: 85%
+
+  - name: Summer
+    encounter_modification: 100%
+
+  - name: Autumn
+    encounter_modification: 85%
+
+  - name: Winter
+    encounter_modification: 40%
+```
+
+**Fields:**
+- `name`: String (required) - Season name. Must match season names used in encounters YAML, weather Excel, rest info, and calendar months.
+- `encounter_modification`: String (required) - Percentage modifier applied to zone encounter_chance for overland encounters. "100%" means no modification; "40%" means encounters are 40% as likely.
+
+**Purpose:** Defines the authoritative list of seasons and controls how encounter frequency varies by season. The season names from this file populate `config.seasons_list`. The `encounter_modification` is applied multiplicatively to a zone's `encounter_chance` when generating overland encounters.
+
+**Example:** Mountains zone has `encounter_chance: 18%`. In Winter (`encounter_modification: 40%`), the effective encounter chance is `18% × 40% = 7.2%`.
+
+---
+
+### 11.8 Default Watches.yaml
+
+**Format:**
+```yaml
+watches:
+  - name: Dawn
+  - name: Morning
+  - name: Afternoon
+  - name: Dusk
+  - name: Early Night
+  - name: Late Night
+```
+
+**Fields:**
+- `name`: String (required) - Watch period display name. The lowercase form (via `.lower()`) is used as the key when looking up watch percentages in encounter YAML data (e.g., "Early Night" → "early night").
+
+**Purpose:** Defines the authoritative list of overland watch periods. These names populate `config.watches_list` and `config.watches_key_list` and flow dynamically throughout the application — there are no hardcoded watch period names in the code.
+
+---
+
+### 11.9 Default Calendar.yaml (Optional)
 
 **Format:**
 ```yaml
@@ -1558,7 +1661,7 @@ calendar:
   - Rolled when entering full moon phase, saved until next cycle
 
 **Configuration:**
-Calendar file path is specified in `Test Data Files.yaml`:
+Calendar file path is specified in `Default Data Files.yaml`:
 ```yaml
 files:
   calendar_file: "Data/Default Calendar.yaml"
@@ -1568,12 +1671,14 @@ files:
 
 ---
 
-### 11.8 Test Data Files.yaml
+### 11.10 Default Data Files.yaml
 
 **Format:**
 ```yaml
 files:
   encounters_file: "Data/Default Encounters.yaml"
+  seasons_file: "Data/Default Seasons.yaml"
+  watches_file: "Data/Default Watches.yaml"
   zones_file: "Data/Default Zones.yaml"
   weathers_file: "Data/Default Weathers.yaml"
   restinfo_file: "Data/Default Rest Info.yaml"
@@ -1582,7 +1687,7 @@ files:
   calendar_file: "Data/Default Calendar.yaml"
 ```
 
-**Purpose:** Allows configuring different data file sets for different campaigns without modifying code.
+**Purpose:** Allows configuring different data file sets for different campaigns without modifying code. All data file paths are relative to the application root directory.
 
 ---
 
@@ -1650,6 +1755,31 @@ files:
 - **Rationale:** More interesting than always starting at new moon
 - **Implementation:** `random.randint(1, lunar_cycle_length)` if lunar_day is null
 
+**13. Dynamic Watches from File:**
+- **Decision:** Load watch periods from YAML file instead of hardcoding
+- **Rationale:** Different campaigns may use different time divisions; data-driven approach is consistent with rest of application
+- **Implementation:** `load_watches_file()` populates `config.watches_list`; all code references the dynamic list
+
+**14. Seasons from Dedicated File:**
+- **Decision:** Load seasons from a dedicated YAML file with encounter_modification, instead of deriving from Excel column headers
+- **Rationale:** Seasons are a first-class concept with their own properties (encounter_modification); Excel columns are a side effect of weather data structure
+- **Implementation:** `load_seasons_file()` populates `config.seasons_list` and `config.seasons_data`
+
+**15. Two-Level Season Effect:**
+- **Decision:** Season affects both (1) whether any encounter occurs and (2) which encounter is selected
+- **Rationale:** Winter should have fewer encounters overall (encounter_modification) AND should exclude creatures that don't appear in winter (per-encounter season %)
+- **Implementation:** encounter_modification applied to zone's encounter_chance at runtime; per-encounter season % baked into 4D array at startup
+
+**16. 4D Encounter Array Built at Startup:**
+- **Decision:** Precompute all encounter weights for all combinations of [Encounter, Zone, Watch, Season]
+- **Rationale:** Avoids recalculating weights on every encounter generation; array lookup is O(1)
+- **Implementation:** `generate_encounter_by_zone_watch_and_season()` builds the array once during `load_all_data()`
+
+**17. Encounter List from YAML, Not Excel:**
+- **Decision:** The encounters YAML file is the authoritative list of encounters for the 4D array; encounters in YAML but not in Excel get zone_weight = 0
+- **Rationale:** Encounters may be defined in YAML for documentation/reference even if they don't appear in any zone; avoids silent data loss if Excel is incomplete
+- **Implementation:** 4D array iterates `config.encounters_data.keys()` and checks if each encounter exists in `encounter_by_zone` coords
+
 ---
 
 ### 12.2 Common Pitfalls
@@ -1691,13 +1821,16 @@ files:
 - [ ] Season dropdown visible when no calendar or no date
 - [ ] New Day button advances calendar and regenerates
 - [ ] Weather displays with emphasized name
-- [ ] 6 encounters generated (or "No Encounter")
+- [ ] Encounters generated for each watch period (or "No Encounter")
 - [ ] Encounter names emphasized (not "No Encounter")
 - [ ] Click encounter name to expand/collapse
 - [ ] Details show immediately below name (no gap)
 - [ ] Individual regeneration works
 - [ ] Rest Check displays with emphasized weather modifiers
 - [ ] Reset clears all content
+- [ ] Season encounter_modification affects encounter frequency (fewer in Winter)
+- [ ] Encounters with 0% season never appear in that season (e.g., Ankheg in Winter)
+- [ ] Encounters with lower season % appear less frequently than those with higher %
 
 **Site Mode:**
 - [ ] Generate with zone
@@ -1745,6 +1878,15 @@ files:
 - [ ] Lunar day randomized on first load if null
 - [ ] Lunar day persists across page refresh
 
+**Data Loading & Seasons:**
+- [ ] Seasons loaded from Default Seasons.yaml (check logs)
+- [ ] Watches loaded from Default Watches.yaml (check logs)
+- [ ] 4D encounter array generated with correct shape (check logs)
+- [ ] seasons_list populated from seasons file (not Excel headers)
+- [ ] watches_list populated from watches file (not hardcoded)
+- [ ] Encounters in YAML but not in Excel have weight 0 (never selected)
+- [ ] Application starts without errors with all data files present
+
 **UI:**
 - [ ] Dark mode follows system preference
 - [ ] Tabs left-aligned, normal case
@@ -1785,9 +1927,9 @@ files:
 
 ## 14. Glossary
 
-**Watch:** A time period in overland travel (Dawn, Morning, etc.)
+**Watch:** A time period in overland travel (e.g., Dawn, Morning). Loaded dynamically from Default Watches.yaml.
 **Time Slot:** A time period in site exploration (Current, 10 minutes, etc.)
-**Spark:** A situation prompt for an encounter (1-4 per encounter)
+**Spark:** A situation prompt for an encounter (1-N per encounter)
 **Overlay:** A secondary zone that modifies encounter chances (50/50 with base zone)
 **Expansion State:** Whether an encounter's details are visible or hidden
 **Emphasis:** Coral pink highlighting (#F78080) applied to important text
@@ -1796,6 +1938,9 @@ files:
 **Current Date:** The in-game date set in the calendar (stored in calendar YAML file)
 **Holiday:** Special day in the calendar with name and description
 **Auto-Season:** Season automatically detected from current calendar month
+**Encounter Modification:** A season-level percentage that adjusts the base encounter chance for overland zones (e.g., Winter at 40% makes all zones 40% as likely to produce encounters)
+**Season Percentage:** A per-encounter percentage indicating how likely that encounter is in a given season (e.g., Ankheg at Winter: 0% never appears in winter). Baked into the 4D array.
+**4D Encounter Array:** Precomputed array of encounter weights with dimensions [Encounter, Zone, Watch, Season]. Cell value = zone_weight × watch_percentage × season_percentage.
 **Lunar Cycle:** The repeating cycle of moon phases (default 27 days)
 **Lunar Day:** Current position in the lunar cycle (1 to lunar_cycle_length)
 **Moon Phase:** One of 8 phases: New Moon, Waxing Crescent, First Quarter, Waxing Gibbous, Full Moon, Waning Gibbous, Last Quarter, Waning Crescent
@@ -1804,6 +1949,21 @@ files:
 ---
 
 ## 15. Revision History
+
+**Version 2.3 - February 12, 2026:**
+- Added Default Seasons.yaml: defines seasons with encounter_modification percentage
+- Added Default Watches.yaml: defines watch periods dynamically (replaces hardcoded OVERLAND_WATCHES)
+- Seasons list now loaded from seasons YAML file (was: derived from weather Excel column headers)
+- Watch periods flow dynamically throughout the application from the watches file
+- Season encounter_modification adjusts overland zone encounter_chance multiplicatively
+- Per-encounter season percentages (from encounters YAML `season` field) now factored into encounter selection
+- 4D encounter probability array [Encounter, Zone, Watch, Season] replaces former 3D array [Encounter, Zone, Watch]
+- 4D array dimension sizes all set dynamically from data files
+- Encounter list for 4D array sourced from encounters YAML (authoritative), not Excel
+- Encounters in YAML but not in Excel get zone_weight = 0 (never selected)
+- Fixed `season` key mismatch in encounters YAML loading (was reading `seasons` plural)
+- Renamed Default Data Files.yaml (was: Default Data Files.yaml)
+- Added seasons_file and watches_file entries to data files config
 
 **Version 2.2 - February 5, 2026:**
 - Added moon phase tracking system
@@ -1822,7 +1982,7 @@ files:
 - Calendar Tab: Visual month grid, clickable days, holiday display
 - Overland integration: Date display, auto-season detection, New Day button
 - Current date stored in calendar YAML file (persists across restarts)
-- Calendar file path configurable in Test Data Files.yaml
+- Calendar file path configurable in Default Data Files.yaml
 - Timer form now starts collapsed (hidden by default)
 - Timer toggle button shows ➖ when expanded, ➕ when collapsed
 - Added calendar utility functions (get_calendar_date_string, get_current_season, advance_calendar_date, get_current_holiday)

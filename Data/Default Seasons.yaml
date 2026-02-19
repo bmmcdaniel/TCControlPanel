@@ -1,0 +1,13 @@
+seasons:
+  - name: Spring
+    encounter_modification: 85%
+    
+  - name: Summer
+    encounter_modification: 100%
+    
+  - name: Autumn
+    encounter_modification: 85%
+    
+  - name: Winter
+    encounter_modification: 40%
+    

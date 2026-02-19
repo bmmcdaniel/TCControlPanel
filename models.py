@@ -2,14 +2,14 @@
 models.py - Data classes for Torchcrawl GM Control Panel
 
 Classes:
-- Encounter: Represents a single encounter occurrence with name, time, sparks, description, and habitat
+- Encounter: Represents a single encounter occurrence with name, time, sparks, description, habitat, habitat_notes, and season
 - Weather: Represents weather conditions with name and effects list
 - Timer: Represents a countdown timer with name and remaining duration
 
 Functions: None
 """
 
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 import random
 import xarray as xr
 
@@ -23,38 +23,44 @@ class Encounter:
         self.time: Optional[str] = None
         self.sparks: List[str] = []
         self.description: Optional[str] = None
-        self.habitat: Optional[str] = None
+        self.habitat: Optional[List[str]] = None
+        self.habitat_notes: Optional[str] = None
+        self.seasons: Union[str, Dict[str, float]] = "Any"
     
     def generate_overland_encounter(
         self,
         zone: str,
         overlay: Optional[str],
         watch: str,
+        season: str,
         encounters_data: Dict,
-        encounter_by_zone_and_watch: xr.DataArray,
-        zones_data: Dict
+        encounter_by_zone_watch_and_season: xr.DataArray,
+        zones_data: Dict,
+        seasons_data: Dict
     ) -> None:
         """
         Generate an overland encounter for a specific watch period.
-        
+
         Algorithm:
         1. Determine active zone (50% chance overlay if provided)
-        2. Get encounter_chance for active zone
+        2. Get encounter_chance for active zone, apply season encounter_modification
         3. Roll to see if encounter occurs
-        4. If encounter occurs, select based on weighted probabilities
+        4. If encounter occurs, select based on 4D weighted probabilities
         5. Populate encounter details
-        
+
         Args:
             zone: Base overland zone
             overlay: Overlay zone or None
             watch: Time of day watch period
+            season: Current season name
             encounters_data: Dictionary of encounter details
-            encounter_by_zone_and_watch: 3D xarray [Encounter, Zone, Watch]
+            encounter_by_zone_watch_and_season: 4D xarray [Encounter, Zone, Watch, Season]
             zones_data: Dictionary of zone information
+            seasons_data: Dictionary of season information
         """
         from utils import weighted_random_choice, parse_percentage, verbose_print
         from logger import log_info
-        
+
         # Step 1: Determine active zone (50/50 if overlay present)
         active_zone = zone
         if overlay is not None:
@@ -63,14 +69,16 @@ class Encounter:
                 verbose_print(f"  Using overlay zone: {overlay}")
             else:
                 verbose_print(f"  Using base zone: {zone}")
-        
-        # Step 2: Get encounter chance
+
+        # Step 2: Get encounter chance, apply season modifier
         encounter_chance = parse_percentage(zones_data[active_zone]['encounter_chance'])
-        
+        season_mod = parse_percentage(seasons_data[season]['encounter_modification'])
+        encounter_chance = encounter_chance * season_mod
+
         # Step 3: Roll for encounter
         roll = random.random()
-        verbose_print(f"  Encounter roll: {roll:.2f} vs threshold {encounter_chance:.2f}")
-        
+        verbose_print(f"  Encounter roll: {roll:.2f} vs threshold {encounter_chance:.2f} (season mod: {season_mod:.0%})")
+
         if roll > encounter_chance:
             # No encounter
             self.name = None
@@ -78,32 +86,36 @@ class Encounter:
             self.sparks = []
             self.description = None
             self.habitat = None
+            self.habitat_notes = None
+            self.seasons = "Any"
             log_info(f"{watch} encounter: No encounter (rolled {roll:.2f} > {encounter_chance:.2f})")
             verbose_print(f"  Result: No encounter")
             return
-        
+
         # Step 4-5: Select and populate encounter
         try:
-            # Get weights for this zone and watch
+            # Get weights for this zone, watch, and season from 4D array
             weights = {}
-            for encounter_name in encounter_by_zone_and_watch.coords['Encounter'].values:
-                weight = float(encounter_by_zone_and_watch.loc[encounter_name, active_zone, watch])
+            for encounter_name in encounter_by_zone_watch_and_season.coords['Encounter'].values:
+                weight = float(encounter_by_zone_watch_and_season.loc[encounter_name, active_zone, watch, season])
                 if weight > 0:
                     weights[encounter_name] = weight
-            
+
             if not weights:
-                # No valid encounters for this zone/watch
+                # No valid encounters for this zone/watch/season
                 self.name = None
                 self.time = None
                 self.sparks = []
                 self.description = None
                 self.habitat = None
-                log_info(f"{watch} encounter: No valid encounters for {active_zone}/{watch}")
+                self.habitat_notes = None
+                self.seasons = "Any"
+                log_info(f"{watch} encounter: No valid encounters for {active_zone}/{watch}/{season}")
                 return
-            
+
             # Select encounter
             selected_encounter = weighted_random_choice(weights)
-            
+
             # Populate encounter details
             encounter_details = encounters_data[selected_encounter]
             self.name = selected_encounter
@@ -111,10 +123,12 @@ class Encounter:
             self.sparks = encounter_details['sparks']  # ALL sparks
             self.description = encounter_details['description']
             self.habitat = encounter_details['habitat']
-            
-            log_info(f"{watch} encounter: {selected_encounter} (zone: {active_zone}, weight: {weights[selected_encounter]:.2f})")
+            self.habitat_notes = encounter_details.get('habitat_notes')
+            self.seasons = encounter_details.get('season', {})
+
+            log_info(f"{watch} encounter: {selected_encounter} (zone: {active_zone}, season: {season}, weight: {weights[selected_encounter]:.2f})")
             verbose_print(f"  Result: {selected_encounter}")
-            
+
         except Exception as e:
             log_info(f"Error generating overland encounter: {e}")
             verbose_print(f"  Error: {e}")
@@ -124,7 +138,9 @@ class Encounter:
             self.sparks = []
             self.description = None
             self.habitat = None
-    
+            self.habitat_notes = None
+            self.seasons = "Any"
+
     def generate_site_encounter(
         self,
         zone: str,
@@ -166,6 +182,8 @@ class Encounter:
             self.sparks = []
             self.description = None
             self.habitat = None
+            self.habitat_notes = None
+            self.seasons = "Any"
             log_info(f"{time_slot} encounter: No encounter (rolled {roll:.2f} > {encounter_chance:.2f})")
             verbose_print(f"  Result: No encounter")
             return
@@ -186,6 +204,8 @@ class Encounter:
                 self.sparks = []
                 self.description = None
                 self.habitat = None
+                self.habitat_notes = None
+                self.seasons = "Any"
                 log_info(f"{time_slot} encounter: No valid encounters for {zone}")
                 return
             
@@ -199,7 +219,9 @@ class Encounter:
             self.sparks = encounter_details['sparks']  # ALL sparks
             self.description = encounter_details['description']
             self.habitat = encounter_details['habitat']
-            
+            self.habitat_notes = encounter_details.get('habitat_notes')
+            self.seasons = encounter_details.get('season', {})
+
             log_info(f"{time_slot} encounter: {selected_encounter} (zone: {zone}, weight: {weights[selected_encounter]:.2f})")
             verbose_print(f"  Result: {selected_encounter}")
             
@@ -212,7 +234,9 @@ class Encounter:
             self.sparks = []
             self.description = None
             self.habitat = None
-    
+            self.habitat_notes = None
+            self.seasons = "Any"
+
     def is_encounter(self) -> bool:
         """
         Check if this represents an actual encounter or 'no encounter'.

@@ -1,8 +1,11 @@
 files:
   encounters_file: "Data/Default Encounters.yaml"
-  zones_file: "Data/Default Zones.yaml"
-  weathers_file: "Data/Default Weathers.yaml"
+  calendar_file: "Data/Mittlands Calendar.yaml"
   restinfo_file: "Data/Default Rest Info.yaml"
+  seasons_file: "Data/Default Seasons.yaml"
+  watches_file: "Data/Default Watches.yaml"
+  weathers_file: "Data/Default Weathers.yaml"
+  zones_file: "Data/Default Zones.yaml"
+
   encounter_by_zone_file: "Data/Default Encounters By Zone.xlsx"
   weather_by_season_file: "Data/Default Weather By Season.xlsx"
-  calendar_file: "Data/Default Calendar.yaml"

@@ -2,11 +2,34 @@ weathers:
   - name: Clear
     effects: []
     
+  - name: Clear and Warm
+    effects: []
+    
+  - name: Clear and Cool
+    effects: []
+    
+  - name: Clear and Cold
+    effects: []
+    
+  - name: Hot
+    effects: []
+    
+  - name: Very Cold
+    effects: []
+    
   - name: Misty
     effects:
       - Poor Visibility
       
+  - name: Freezing Mist
+    effects:
+      - Poor Visibility
+      
   - name: Gentle Rains
+    effects:
+      - Light Precipitation
+      
+  - name: Light Snow
     effects:
       - Light Precipitation
       
@@ -22,6 +45,27 @@ weathers:
       - Difficult Travel
       
   - name: Heavy Snow
+    effects:
+      - Heavy Precipitation
+      - Poor Visibility
+      - Difficult Travel
+      
+  - name: Hailstorm
+    effects:
+      - Heavy Precipitation
+      - Poor Visibility
+      - Difficult Travel
+
+  - name: Solid Fog
+    effects:
+      - Poor Visibility
+      - Difficult Travel
+
+  - name: Gentle Rains, then Rainbows
+    effects:
+      - Light Precipitation
+
+  - name: Thunderstorm, followed by Air Elementals
     effects:
       - Heavy Precipitation
       - Poor Visibility

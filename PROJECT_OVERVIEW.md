@@ -337,7 +337,7 @@ Every generated element has a 🔄 button:
 
 ### Medium (Minimal Code)
 - **Add time slots:** Edit SITE_TIME_SLOTS in config.py
-- **Add watches:** Edit OVERLAND_WATCHES in config.py
+- **Add watches:** Edit Data/Default Watches.yaml
 - **Change port:** Edit ui.run() in app.py (port=8080)
 
 ### Advanced (Code Changes)

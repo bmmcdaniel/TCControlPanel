@@ -1,0 +1,370 @@
+calendar:
+  name: Mittlands Common Calendar
+  description: A 12-month calendar with 4 seasonal festivals, totaling 364 days.
+  days_per_week: 6
+  lunar_cycle_length: 27
+  blood_moon_chance: 10
+  current:
+    calendar_month: 5
+    calendar_day: 27
+    lunar_day: 24
+    is_blood_moon: false
+  week_days:
+  - Oathday
+  - Travelday
+  - Marketday
+  - Homeday
+  - Kingsday
+  - Godsday
+  months:
+  - name: Rainmote
+    days: 30
+    season: Spring
+  - name: Ostara
+    days: 1
+    season: Spring
+  - name: Sproutmote
+    days: 30
+    season: Spring
+  - name: Foalmote
+    days: 30
+    season: Spring
+  - name: Haymote
+    days: 30
+    season: Summer
+  - name: Litha
+    days: 1
+    season: Summer
+  - name: Greenmote
+    days: 30
+    season: Summer
+  - name: Highsunmote
+    days: 30
+    season: Summer
+  - name: Ripenmote
+    days: 30
+    season: Autumn
+  - name: Meath
+    days: 1
+    season: Autumn
+  - name: Wardmote
+    days: 30
+    season: Autumn
+  - name: Readymote
+    days: 30
+    season: Autumn
+  - name: Cullmote
+    days: 30
+    season: Winter
+  - name: Yule
+    days: 1
+    season: Winter
+  - name: Hearthmote
+    days: 30
+    season: Winter
+  - name: Bidingmote
+    days: 30
+    season: Winter
+  holidays:
+  - name: Brithan, Winter/Spring Cross-Quarter
+    description: Mid-way between Yule and Ostera. The end of snows and beginning of
+      spring rains. Celebrated with role-reversals, including the appointment of the
+      King of Misrule. Traditional gifts are fish or eels.
+    month: Readymote
+    day: 15
+  - name: Ostara, Spring Equinox
+    description: Spring equinox festival. Traditional gifts are cooked eggs, often
+      decorated.
+    month: Ostara
+    day: 1
+  - name: Beltane, Spring/Summer Cross-Quarter
+    description: Mid-way between Ostara and Litha. Fertility-themed. Dancing around
+      maypoles. A teenage girl will be elected the Queen of Beltane. Traditional gifts
+      are early flowers, especially to youth.
+    month: Foalmote
+    day: 15
+  - name: Litha, Summer Solstice
+    description: Summer solstice festival. Traditional gifts are ivy, especially to
+      soldiers.
+    month: Litha
+    day: 1
+  - name: Lammas, Summer/Autumn Cross-Quarter
+    description: Mid-way between Litha and Meath. The first day of harvest. Traditional
+      gifts are elaborate breads baked with the first harvested wheat, especially
+      to churchmen.
+    month: Highsunmote
+    day: 15
+  - name: Meath, Autumn Equinox
+    description: Autumn equinox festival. As it occurs mid-harvest, it is a low-key
+      holiday. Gambling is common. Traditional gifts are dried herbs and flowers,
+      especially to immediate family.
+    month: null
+    day: 1
+  - name: Samhain, Autumn/Winter Cross-Quarter
+    description: Mid-way between Litha and Meath. The end of the harvest season, and
+      the beginning of winter. This is also the season of ghosts and spooks. It is
+      celebrated with bonfires. Traditional gifts are salt, especially to elders.
+    month: Readymote
+    day: 15
+  - name: Yule, Winter Solstice
+    description: Winter solstice festival, the shortest day of the year. Traditional
+      gifts are toys to children, and honeyed sweets mulled mead to anyone in the
+      community.
+    month: Yule
+    day: 1
+  - name: Embers
+    description: The day prior top the Feast of Revelation. Officially intended to
+      be spent in prayer and contemplation, but observed only by the truly faithful.
+    month: Hearthmote
+    day: 6
+  - name: Feast of the Revelation
+    description: Feast celebrating the Aperitor's revelation. One of two key feasts
+      of the liturgical calendar.
+    month: Hearthmote
+    day: 6
+  - name: Vigil
+    description: First day of Holy Week. Annual oaths of fealty are renewed on this
+      day.
+    month: Sproutmote
+    day: 13
+  - name: Alms
+    description: Second day of Holy Week. Alms for the poor are given on this day.
+    month: Sproutmote
+    day: 14
+  - name: Contemplation
+    description: Third day of Holy Week. On this day, churchmembers meditate.
+    month: Sproutmote
+    day: 15
+  - name: Innocents
+    description: Fourth day of Holy Week. Communal activities are emphasized this
+      day.
+    month: Sproutmote
+    day: 16
+  - name: Procession of Saints
+    description: Fifth day of Holy Week. The saints are honored on this day.
+    month: Sproutmote
+    day: 17
+  - name: Feast of the Ascension
+    description: Sixth and final day of Holy Week. The day when Saint Piello ascended
+      to the heavens. One of two key feasts of the liturgical calendar.
+    month: Sproutmote
+    day: 18
+  - name: Saint Maximillian Magnus's Feast Day
+    description: Feast of Emperor and Saint Maximillian Magnus, patron saint of leadership
+      and the Empire.
+    month: Wardmote
+    day: 3
+  - name: Saint Adso's Feast Day
+    description: Feast of Saint Adso, patron saint of youth, students and novices.
+    month: Sproutmote
+    day: 17
+  - name: Saint Anselm's Feast Day
+    description: Feast of Saint Anselm, patron saint of soldiers and service.
+    month: Wardmote
+    day: 29
+  - name: Saint Arno's Feast Day
+    description: Feast of Saint Arno the Venerable, patron saint of scholars, learning
+      and librarians.
+    month: Readymote
+    day: 5
+  - name: Saint Beatrix's Feast Day
+    description: Feast of Saint Beatrix, patron saint of birds, singing and music.
+    month: Foalmote
+    day: 4
+  - name: Saint Benester's Feast Day
+    description: Feast of Saint Benester the Righteous, patron saint of strength,
+      patience and quiet forebearance.
+    month: Cullmote
+    day: 22
+  - name: Saint Bertain's Feast Day
+    description: Feast of Saint Bertain, patron saint of hearthfires, family lineages
+      and kinship.
+    month: Hearthmote
+    day: 21
+  - name: Saint Bosch's Feast Day
+    description: Feast of Saint Bosch the Grievious, patron saint of funerals and
+      passage into the afterlife.
+    month: Readymote
+    day: 16
+  - name: Saint Clewyd's Feast Day
+    description: Feast of Saint Clewyd the Refulgent, patron saint of Dolmenwood and
+      protection against corruption.
+    month: Wardmote
+    day: 10
+  - name: Saint Cornice's Feast Day
+    description: Feast of Saint Cornice, patron saint of servants and maids.
+    month: Highsunmote
+    day: 5
+  - name: Saint Cuthebert's Feast Day
+    description: Feast of Saint Cuthebert of the Cudgel, patron saint of common sense,
+      wisdom, zeal and discipline.
+    month: Greenmote
+    day: 27
+  - name: Saint Dougan's Feast Day
+    description: Feast of Saint Dougan the Incredulous, patron saint of night wardens
+      and orchards.
+    month: Haymote
+    day: 29
+  - name: Saint Eggort's Feast Day
+    description: Feast of Saint Eggort the Cave-Dweller, patron saint of hermits and
+      miners.
+    month: Rainmote
+    day: 20
+  - name: Saint Eiden's Feast Day
+    description: Feast of Saint Eiden the Illustrious, patron saint of advice, counselors,
+      preparation, and divination.
+    month: Sproutmote
+    day: 27
+  - name: Saint Elsa's Feast Day
+    description: Feast of Saint Elsa the Balm-Gusher, patron saint of light, ecstasy
+      and the air.
+    month: Foalmote
+    day: 24
+  - name: Saint Faxis's Feast Day
+    description: Feast of Saint Faxis of the Scales, patron saint of inquisitors.
+    month: Ripenmote
+    day: 3
+  - name: Saint Foggarty's Feast Day
+    description: Feast of Saint Foggarty of the Stepping Stones, patron saint of travelers,
+      riverfolk, innkeepers and hospitality.
+    month: Rainmote
+    day: 9
+  - name: Saint Gio's Feast Day
+    description: Feast of Saint Gio, patron saint of churchwards.
+    month: Warmote
+    day: 21
+  - name: Saint Gondyw's Feast Day
+    description: Feast of Saint Gondyw, patron saint of preaching, missionaries, translators
+      and clerks.
+    month: Cullmote
+    day: 18
+  - name: Saint Gonfali's Feast Day
+    description: Feast of Saint Gonfali, patron saint of revelation, early Church
+      and heralds.
+    month: Bidingmote
+    day: 11
+  - name: Saint Gretchen's Feast Day
+    description: Feast of Saint Gretchen, patron saint of poetry, spring festivals,
+      weddings and new beginnings.
+    month: Sproutmote
+    day: 2
+  - name: Saint Guthac's Feast Day
+    description: Feast of Saint Guthac the Solitary, patron saint of forests, wastelands
+      and rangers.
+    month: Readymote
+    day: 25
+  - name: Saint Hermann's Feast Day
+    description: Feast of Saint Hermann the Recluse, patron saint of monasticism.
+    month: Cullmote
+    day: 4
+  - name: Saint Hildegard's Feast Day
+    description: Feast of Saint Hildegard, patron saint of herbalism and gardening.
+    month: Greenmote
+    day: 23
+  - name: Saint Keye the Chronicler's Feast Day
+    description: Feast of Saint Keye the Chronicler, patron saint of calendars, history
+      and the Church.
+    month: Rainmote
+    day: 1
+  - name: Saint Leibowitz's Feast Day
+    description: Feast of Saint Leibowitz of the Canticle, patron saint of knowledge,
+      preservation and the Old Empire.
+    month: Greenmote
+    day: 19
+  - name: Saint Lillibeth's Feast Day
+    description: Feast of Saint Lillibeth the Merciful, patron saint of life, relief
+      and healing.
+    month: Bidingmote
+    day: 9
+  - name: Saint Markovia's Feast Day
+    description: Feast of Saint Markovia the Liberator, patron saint of resistance
+      to tyranny and storms.
+    month: Wardmote
+    day: 14
+  - name: Saint Meeks' Feast Day
+    description: Feast of Saint Meeks the Rebutter, patron saint of laughter, debate
+      and tricksters.
+    month: Haymote
+    day: 3
+  - name: Saint Orban's Feast Day
+    description: Feast of Saint Orban, patron saint of lost causes, last stands, and
+      doom.
+    month: Highsunmote
+    day: 21
+  - name: Saint Pastery's Feast Day
+    description: Feast of Saint Pastery, patron saint of cowherds, milkmaids and cheese-makers.
+    month: Ripenmote
+    day: 27
+  - name: Saint Ponch's Feast Day
+    description: Feast of Saint Ponch the Prudent, patron saint of whalers and castaways.
+    month: Wardmote
+    day: 12
+  - name: Saint Quister's Feast Day
+    description: Feast of Saint Quister, patron saint of the wronged weak and vengeance.
+    month: Hearthmote
+    day: 8
+  - name: Saint Reinold's Feast Day
+    description: Feast of Saint Reinold of Bomberg, patron saint of cathedrals, stonework,
+      masons and dwarves.
+    month: Hearthmote
+    day: 18
+  - name: Saint Rotha's Feast Day
+    description: Feast of Saint Rotha, patron saint of boatmen, sailors, and water.
+    month: Haymote
+    day: 16
+  - name: Saint Rudegard's Feast Day
+    description: Feast of Saint Rudegard of Ulfberg, patron saint of overcoming obstacles
+      and bridges.
+    month: Greenmote
+    day: 21
+  - name: Saint Sedge's Feast Day
+    description: Feast of Saint Sedge, patron saint of Church defenders and holy knights.
+    month: Foalmote
+    day: 23
+  - name: Saint Siegfred's Feast Day
+    description: Feast of Saint Siegfred the Dragonslayer, patron saint of heroes
+      and glory.
+    month: Hearthmote
+    day: 25
+  - name: Saint Signis's Feast Day
+    description: Feast of Saint Signis the Lichward, patron saint of protection against
+      undeath.
+    month: Sproutmote
+    day: 2
+  - name: Saint Swithun's Feast Day
+    description: Feast of Saint Swithun, patron saint of beer, festivals, luck and
+      dice.
+    month: Ripenmote
+    day: 24
+  - name: Saint Teresa's Feast Day
+    description: Feast of Saint Teresa of the Roses, patron saint of charity, peace
+      and roses.
+    month: Highsunmote
+    day: 8
+  - name: Saint Vinicus' Feast Day
+    description: Feast of Saint Vinicus, Thrice-Hanged, patron saint of beggars and
+      mice.
+    month: Bidingmote
+    day: 28
+  - name: Saint Waldo's Feast Day
+    description: Feast of Saint Waldo, patron saint of poverty, joy, nature and children.
+    month: Haymote
+    day: 16
+  - name: Saint Willofrith's Feast Day
+    description: Feast of Saint Willofrith the Repentant, patron saint of repentant
+      thieves and sinners.
+    month: Readymote
+    day: 30
+  - name: Saint Xavier's Feast Day
+    description: Feast of Saint Xavier, gatekeeper of heaven and judge of men's souls.
+    month: Rainmote
+    day: 30
+  - name: Hundred Saints' Feast Day
+    description: Feast of the Hundred Lost Saints, whose names have been lost to time.
+    month: Bidingmote
+    day: 15
+  - name: The Three Martyrs' Feast Day
+    description: Feast of Saints Esther, Hildace, and Ingrid, the Three Martyrs, patron
+      saints of martyrs, truth-seekers and steadfast faith.
+    month: Foalmote
+    day: 21

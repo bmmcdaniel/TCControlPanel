@@ -1,0 +1,361 @@
+calendar:
+  name: Dolmenwood Common Reckoning
+  description: A 12-month calendar totaling 352 days. Every month starts on a Colly.
+  days_per_week: 7
+  lunar_cycle_length: 29.33
+  week_days:
+  - Colly
+  - Chime
+  - Hayme
+  - Moot
+  - Frisk
+  - Eggfast
+  - Sunning
+  months:
+  - name: Grimvold
+    days: 30
+    season: The onset of winter
+    wysendays:
+    - Hanglemas
+    - Dyboll’s Day
+    moon: Grinning moon
+  - name: Lymewald
+    days: 28
+    season: Deep winter
+    moon: Dead moon
+  - name: Haggryme
+    days: 30
+    season: The fading of winter
+    wysendays:
+    - Yarl’s Day
+    - The Day of Virgins
+    moon: Beast moon
+  - name: Symswald
+    days: 29
+    season: The onset of spring
+    wysendays:
+    - Hopfast
+    moon: Squamous moon
+  - name: Harchment
+    days: 29
+    season: High spring
+    wysendays:
+    - Smithing
+    moon: Knight’s moon
+  - name: Iggwyld
+    days: 30
+    season: The fading of spring
+    wysendays:
+    - Shortening
+    - Longshank’s Day
+    moon: Rotting moon
+  - name: Chysting
+    days: 31
+    season: The onset of summer
+    wysendays:
+    - Bradging
+    - Copsewallow
+    - Chalice
+    moon: Maiden’s moon
+  - name: Lillipythe
+    days: 29
+    season: High summer
+    wysendays:
+    - Old Dobey’s Day
+    moon: Witch’s moon
+  - name: Haelhold
+    days: 28
+    season: The fading of summer
+    moon: Robber’s moon
+  - name: Reedwryme
+    days: 30
+    season: The onset of autumn
+    wysendays:
+    - Shub’s Eve
+    - Druden Day
+    moon: Goat moon
+  - name: Obthryme
+    days: 28
+    season: Deep autumn
+    moon: Narrow moon
+  - name: Braghold
+    days: 30
+    season: The fading of autumn
+    wysendays:
+    - The Day of Doors
+    - Dolmenday
+    moon: Black moon
+  holidays:
+  - name: The Feast of Cats
+    month: Symswald
+    day: 2
+    description: Spring dances with cat masks.
+  - name: The Feast of St Clewyd
+    month: Reedwryme
+    day: 25
+    description: Patron saint of Dolmenwood; unicorn-effigies burned.
+  - name: Festival of the Green Man
+    month: Reedwryme
+    day: 30
+    description: Memorial to the slain king; moss manikins hung from trees.
+  - name: The Hunting of the Winter Hart
+    month: Braghold
+    day: 30
+    description: Twilight hunt for the white fairy stag.
+  - name: Winter Solstice
+    month: Grimvold
+    day: 19
+  - name: Spring Equinox
+    month: Symswald
+    day: 20
+  - name: Summer Solstice
+    month: Chysting
+    day: 18
+  - name: Autumnal Equinox
+    month: Reedwryme
+    day: 19
+  - name: St Vinicus
+    month: Grimvold
+    day: 1
+  - name: St Albert
+    month: Grimvold
+    day: 4
+  - name: St Offrid
+    month: Grimvold
+    day: 5
+  - name: St Choad
+    month: Grimvold
+    day: 9
+  - name: St Clyde
+    month: Grimvold
+    day: 15
+  - name: St Baldric
+    month: Grimvold
+    day: 19
+  - name: St Elsa
+    month: Grimvold
+    day: 20
+  - name: St Cantius
+    month: Grimvold
+    day: 27
+  - name: St Joane
+    month: Grimvold
+    day: 29
+  - name: St Waylord
+    month: Lymewald
+    day: 2
+  - name: St Gondyw
+    month: Lymewald
+    day: 4
+  - name: St Calafredus
+    month: Lymewald
+    day: 11
+  - name: St Wynne
+    month: Lymewald
+    day: 15
+  - name: St Albrith
+    month: Lymewald
+    day: 20
+  - name: St Fredulus
+    month: Lymewald
+    day: 23
+  - name: St Eggort
+    month: Lymewald
+    day: 28
+  - name: St Clister
+    month: Haggryme
+    day: 5
+  - name: St Ponch
+    month: Haggryme
+    day: 6
+  - name: St Flatius
+    month: Haggryme
+    day: 9
+  - name: St Quister
+    month: Haggryme
+    day: 11
+  - name: St Aeynid
+    month: Haggryme
+    day: 14
+  - name: St Visyg
+    month: Haggryme
+    day: 19
+  - name: St Pannard
+    month: Haggryme
+    day: 22
+  - name: St Simone
+    month: Haggryme
+    day: 24
+  - name: St Sortia
+    month: Haggryme
+    day: 25
+  - name: St Pastery
+    month: Haggryme
+    day: 27
+  - name: St Bethany
+    month: Haggryme
+    day: 28
+  - name: St Tumbel
+    month: Haggryme
+    day: 29
+  - name: St Lillibeth
+    month: Haggryme
+    day: 30
+  - name: St Gwigh
+    month: Symswald
+    day: 1
+  - name: St Medigor
+    month: Symswald
+    day: 3
+  - name: St Ingrid
+    month: Symswald
+    day: 5
+  - name: St Neblit
+    month: Symswald
+    day: 7
+  - name: St Dullard
+    month: Symswald
+    day: 8
+  - name: St Whittery
+    month: Symswald
+    day: 10
+  - name: St Pious
+    month: Symswald
+    day: 12
+  - name: St Thorm
+    month: Symswald
+    day: 14
+  - name: St Goodenough
+    month: Symswald
+    day: 18
+  - name: St Craven
+    month: Harchment
+    day: 1
+  - name: St Rhilma
+    month: Harchment
+    day: 9
+  - name: St Talambeth
+    month: Harchment
+    day: 13
+  - name: St Jorrael
+    month: Harchment
+    day: 16
+  - name: St Hoargrime
+    month: Harchment
+    day: 20
+  - name: St Abthius
+    month: Harchment
+    day: 23
+  - name: St Primace
+    month: Harchment
+    day: 25
+  - name: St Knock
+    month: Harchment
+    day: 26
+  - name: St Wilbranch
+    month: Harchment
+    day: 29
+  - name: St Gripe
+    month: Iggwyld
+    day: 3
+  - name: St Puriphon
+    month: Iggwyld
+    day: 9
+  - name: St Hildace
+    month: Iggwyld
+    day: 20
+  - name: St Signis
+    month: Iggwyld
+    day: 25
+  - name: St Maternis
+    month: Iggwyld
+    day: 27
+  - name: St Waylaine
+    month: Iggwyld
+    day: 30
+  - name: St Nuncy
+    month: Chysting
+    day: 6
+  - name: St Apoplect
+    month: Chysting
+    day: 10
+  - name: St Comice
+    month: Chysting
+    day: 19
+  - name: St Dougan
+    month: Chysting
+    day: 21
+  - name: St Sabian
+    month: Chysting
+    day: 25
+  - name: St Jubilant
+    month: Chysting
+    day: 31
+  - name: St Foggarty
+    month: Lillipythe
+    day: 6
+  - name: St Keye
+    month: Lillipythe
+    day: 7
+  - name: St Dillage
+    month: Lillipythe
+    day: 19
+  - name: St Torphia
+    month: Lillipythe
+    day: 21
+  - name: St Esther
+    month: Lillipythe
+    day: 23
+  - name: St Philodeus
+    month: Lillipythe
+    day: 25
+  - name: St Lummox
+    month: Lillipythe
+    day: 27
+  - name: St Capernott
+    month: Lillipythe
+    day: 29
+  - name: St Sanguine
+    month: Haelhold
+    day: 10
+  - name: St Benester
+    month: Haelhold
+    day: 13
+  - name: St Primace
+    month: Haelhold
+    day: 20
+  - name: St Gretchen
+    month: Haelhold
+    day: 25
+  - name: St Galaunt
+    month: Haelhold
+    day: 27
+  - name: St Willibart
+    month: Reedwryme
+    day: 29
+  - name: St Horace
+    month: Obthryme
+    day: 1
+  - name: St Hamfast
+    month: Obthryme
+    day: 9
+  - name: St Woad
+    month: Obthryme
+    day: 13
+  - name: St Hodwich
+    month: Obthryme
+    day: 22
+  - name: St Wort
+    month: Obthryme
+    day: 24
+  - name: St Godfrey
+    month: Obthryme
+    day: 27
+  - name: St Dank
+    month: Obthryme
+    day: 28
+  current:
+    lunar_day: 24
+    is_blood_moon: false
+    calendar_month: 6
+    calendar_day: 18

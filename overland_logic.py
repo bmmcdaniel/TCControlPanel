@@ -138,20 +138,22 @@ def generate_overland_encounters() -> Dict[str, Encounter]:
     
     encounters = {}
     
-    for watch in config.OVERLAND_WATCHES:
+    for watch in config.watches_list:
         verbose_print(f"  {watch}:")
-        
+
         # Create new encounter instance
         encounter = Encounter()
-        
+
         # Generate encounter
         encounter.generate_overland_encounter(
             zone=config.selected_overland_zone,
             overlay=config.selected_overland_overlay,
             watch=watch,
+            season=config.selected_overland_season,
             encounters_data=config.encounters_data,
-            encounter_by_zone_and_watch=config.encounter_by_zone_and_watch,
-            zones_data=config.zones_data
+            encounter_by_zone_watch_and_season=config.encounter_by_zone_watch_and_season,
+            zones_data=config.zones_data,
+            seasons_data=config.seasons_data
         )
         
         encounters[watch] = encounter
@@ -282,14 +284,16 @@ def regenerate_individual_overland_encounter(watch: str) -> Encounter:
     # Create new encounter instance
     encounter = Encounter()
     
-    # Generate encounter using CURRENT zone/overlay selections
+    # Generate encounter using CURRENT zone/overlay/season selections
     encounter.generate_overland_encounter(
-        zone=config.selected_overland_zone,      # Use current zone
-        overlay=config.selected_overland_overlay, # Use current overlay
+        zone=config.selected_overland_zone,
+        overlay=config.selected_overland_overlay,
         watch=watch,
+        season=config.selected_overland_season,
         encounters_data=config.encounters_data,
-        encounter_by_zone_and_watch=config.encounter_by_zone_and_watch,
-        zones_data=config.zones_data
+        encounter_by_zone_watch_and_season=config.encounter_by_zone_watch_and_season,
+        zones_data=config.zones_data,
+        seasons_data=config.seasons_data
     )
     
     # Update global state

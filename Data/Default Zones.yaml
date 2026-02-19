@@ -1,32 +1,79 @@
 zones:
-  - name: Flats
+  # OVERLAND ZONES - Natural terrain types
+  - name: Meadows
     types: [Overland]
     encounter_chance: 10%
     
-  - name: Shudds
+  - name: Farmland
+    types: [Overland]
+    encounter_chance: 10%
+    
+  - name: Rolling Hills
+    types: [Overland]
+    encounter_chance: 12%
+    
+  - name: Craggy Hills
     types: [Overland]
     encounter_chance: 15%
     
-  - name: Croch
+  - name: Mountains
+    types: [Overland]
+    encounter_chance: 18%
+    
+  - name: Light Forest
+    types: [Overland]
+    encounter_chance: 12%
+    
+  - name: Dense Forest
     types: [Overland]
     encounter_chance: 15%
     
-  - name: Road
+  - name: Thorny Forest
+    types: [Overland]
+    encounter_chance: 18%
+    
+  - name: Fungal Forest
+    types: [Overland]
+    encounter_chance: 20%
+    
+  - name: Bogs
+    types: [Overland]
+    encounter_chance: 15%
+    
+  - name: Swamps
+    types: [Overland]
+    encounter_chance: 15%
+    
+  - name: Lakes
+    types: [Overland]
+    encounter_chance: 12%
+    
+  - name: Seas
+    types: [Overland]
+    encounter_chance: 15%
+    
+  # OVERLAY ZONES - Features that cross terrain
+  - name: Roads
     types: [Overlay]
     encounter_chance: 20%
     
-  - name: River
+  - name: Rivers
     types: [Overlay]
     encounter_chance: 15%
     
-  - name: Ruin
+  # SITE ZONES - Specific locations
+  - name: Settlements
+    types: [Site]
+    encounter_chance: 18%
+    
+  - name: Ruins
     types: [Overlay, Site]
     encounter_chance: 25%
     
-  - name: Cave
+  - name: Caverns
     types: [Site]
     encounter_chance: 20%
     
-  - name: Dungeon
+  - name: Dungeons
     types: [Site]
     encounter_chance: 15%

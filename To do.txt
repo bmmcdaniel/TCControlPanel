@@ -1,0 +1,27 @@
+1. Implement season-based encounter as a 4th dimension. Need to go through encounters file to add seasonal percentages
+
+... OK, lets add the logic now. For overland encounters only (not site-based encounters), when an encounter is  generated, check it against the seaons for the encounter. If the current season is in the season list for the  encounter (or the season list for the encounter contains "Any") then the encounter is valid, and should proceed.
+
+2. Foraging. Have separate tab on foraging. Zone and season are linked. Roll on foraging plants only. have tag for that. Foraged items appear only during season.
+
+4. Test tab. Input season, zone, time. See encounter probability distribution
+
+5. For zones, make the chance of an encounter seasonal.
+
+6. Add signs and false signs.
+
+8. For the calendar tab, mouse-over descriptions don't work for the current holiday. 
+
+9. Seasons have a modifier for encounter percentage, e.g. summer 100%; winter 60%. In addition to #1. This affects the 4D encounter matrix.
+
+10. More clarity on exit/error statement when encounters don't match encounters by zone
+
+
+
+
+
+Redo air elementals 80/60/80/60
+
+A "visionary hallucinogen" -> induces visual hallucinogens.
+
+Add encounter for men. Torch bobbing in the distance. AC can choose whether to investigate. Designed to mimic will o wisp
