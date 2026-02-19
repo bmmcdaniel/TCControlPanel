@@ -44,16 +44,10 @@ def parse_arguments():
 def reset_expansion_states(mode: str = "all"):
     """Reset encounter expansion states."""
     if mode == "all" or mode == "overland":
-        for watch in config.watches_list:
-            key = f"expanded_overland_{watch}"
-            if key in app.storage.user:
-                app.storage.user[key] = False
-    
+        app.storage.user['overland_expansions'] = {}
+
     if mode == "all" or mode == "site":
-        for slot in config.SITE_TIME_SLOTS:
-            key = f"expanded_site_{slot}"
-            if key in app.storage.user:
-                app.storage.user[key] = False
+        app.storage.user['site_expansions'] = {}
 
 
 def render_encounter(encounter: Encounter, label: str, mode: str, refresh_func):
@@ -96,22 +90,17 @@ def render_encounter(encounter: Encounter, label: str, mode: str, refresh_func):
                 # Remove all padding, margins, and gap for ultra-tight spacing
                 details_container = ui.column().classes('mt-0 mb-0 gap-0').style('padding: 0 !important; margin: 0 !important; gap: 0 !important;')
                 
-                # For site mode, check if this encounter should be initially expanded
-                if mode == "site":
-                    expansions = app.storage.user.get('site_expansions', {})
-                    details_container.visible = expansions.get(label, False)
-                else:
-                    details_container.visible = False
-                
-                # Toggle function - saves state for site mode
+                # Check if this encounter should be initially expanded (persisted in storage)
+                storage_key = f'{mode}_expansions'
+                expansions = app.storage.user.get(storage_key, {})
+                details_container.visible = expansions.get(label, False)
+
+                # Toggle function - saves state so it persists across refreshes
                 def toggle_expand():
                     details_container.visible = not details_container.visible
-                    
-                    # Save expansion state for site mode so it persists when encounters shift
-                    if mode == "site":
-                        expansions = app.storage.user.get('site_expansions', {})
-                        expansions[label] = details_container.visible
-                        app.storage.user['site_expansions'] = expansions
+                    expansions = app.storage.user.get(storage_key, {})
+                    expansions[label] = details_container.visible
+                    app.storage.user[storage_key] = expansions
                 
                 # Attach click handler to name
                 name_label.on('click', toggle_expand)
@@ -150,152 +139,508 @@ def render_encounter(encounter: Encounter, label: str, mode: str, refresh_func):
             ui.button('🔄', on_click=regen_no_enc).props('flat dense')
 
 
-@ui.refreshable
-def overland_content():
-    """Refreshable Overland tab content."""
+def open_weather_dialog():
+    """Open the weather selector as a popup dialog."""
+    with ui.dialog() as dialog, ui.card():
+        weather_dialog_content(dialog)
+    dialog.open()
 
-    # Determine calendar state
+
+def weather_dialog_content(dialog):
+    """Render weather selector inside a dialog."""
+    season = config.selected_overland_season
+
+    # Current weather display
+    if config.generated_overland_weather and config.generated_overland_weather.name:
+        weather_str = str(config.generated_overland_weather)
+        if '(' in weather_str:
+            name_part = weather_str.split('(')[0].strip()
+            effects_part = '(' + weather_str.split('(', 1)[1]
+            ui.html(f'Current: <span class="emphasis">{name_part}</span> {effects_part}', sanitize=False).classes('mt-0 mb-1')
+        else:
+            ui.html(f'Current: <span class="emphasis">{weather_str}</span>', sanitize=False).classes('mt-0 mb-1')
+    else:
+        ui.label('No weather generated yet').classes('mt-0 mb-1 text-gray-500')
+
+    # Regenerate button
+    def handle_regenerate():
+        regenerate_individual_weather()
+        dialog.close()
+        global_header.refresh()
+        overland_content.refresh()
+        resting_content.refresh()
+
+    ui.button('Regenerate', on_click=handle_regenerate)
+
+    ui.separator().classes('my-2')
+
+    # List valid weathers for current season (above-0 probability, excluding "No Change")
+    ui.label(f'Weathers for {season}').classes('font-bold mt-0 mb-1')
+
+    if config.weather_by_season is not None:
+        weights = {}
+        for weather_name in config.weather_by_season.coords['Weather'].values:
+            w = float(config.weather_by_season.loc[weather_name, season])
+            if w > 0 and weather_name != "No Change":
+                weights[weather_name] = w
+        total = sum(weights.values())
+
+        if weights:
+            sorted_weathers = sorted(weights.items(), key=lambda x: x[1], reverse=True)
+            with ui.column().classes('mt-0 mb-0 gap-0'):
+                for weather_name, w in sorted_weathers:
+                    pct = w / total * 100
+                    effects = config.weathers_data.get(weather_name, {}).get('effects', [])
+                    effects_str = f' ({", ".join(effects)})' if effects else ''
+                    is_current = (config.generated_overland_weather and
+                                  config.generated_overland_weather.name == weather_name)
+
+                    def make_weather_click(name=weather_name):
+                        def handler():
+                            from models import Weather
+                            from overland_logic import generate_overland_rest_info
+                            weather_info = config.weathers_data.get(name, {'effects': []})
+                            if config.generated_overland_weather is None:
+                                config.generated_overland_weather = Weather()
+                            config.generated_overland_weather.name = name
+                            config.generated_overland_weather.effects = weather_info.get('effects', [])
+                            generate_overland_rest_info()
+                            dialog.close()
+                            global_header.refresh()
+                            overland_content.refresh()
+                            resting_content.refresh()
+                        return handler
+
+                    display = f'{weather_name}{effects_str} — {pct:.0f}%'
+                    if is_current:
+                        ui.html(
+                            f'<span class="emphasis" style="cursor: pointer;">{display}</span>',
+                            sanitize=False
+                        ).classes('mt-0 mb-0').on('click', make_weather_click())
+                    else:
+                        ui.html(
+                            f'<span style="cursor: pointer;">{display}</span>',
+                            sanitize=False
+                        ).classes('mt-0 mb-0').on('click', make_weather_click())
+        else:
+            ui.label('No weathers available for this season').classes('mt-0 mb-0 text-gray-500')
+
+    # Close button
+    with ui.row().classes('w-full justify-end mt-2'):
+        ui.button('Close', on_click=dialog.close)
+
+
+def open_calendar_dialog():
+    """Open the calendar date picker as a popup dialog."""
+    with ui.dialog() as dialog, ui.card().classes('w-full').style('max-width: 600px;'):
+        calendar_dialog_content(dialog)
+    dialog.open()
+
+
+def open_moon_dialog():
+    """Open the moon phase selector as a popup dialog."""
+    with ui.dialog() as dialog, ui.card():
+        moon_dialog_content(dialog)
+    dialog.open()
+
+
+def calendar_dialog_content(dialog):
+    """Render calendar date picker inside a dialog."""
+    if not config.calendar_data:
+        ui.label('No calendar loaded').classes('text-gray-500')
+        return
+
+    current = config.calendar_data.get('current', {})
+    months = config.calendar_data.get('months', [])
+    holidays = config.calendar_data.get('holidays', [])
+    days_per_week = config.calendar_data.get('days_per_week', 6)
+
+    # Build holiday lookup
+    holiday_lookup = {}
+    for holiday in holidays:
+        key = (holiday.get('month'), holiday.get('day'))
+        holiday_lookup[key] = holiday
+
+    # Current date display at top
+    date_string = get_calendar_date_string()
+    if date_string:
+        ui.html(date_string, sanitize=False).classes('text-lg font-bold mt-0 mb-0')
+
+    # Holiday info if current date is a holiday
+    current_holiday = get_current_holiday()
+    if current_holiday:
+        with ui.column().classes('mt-0 mb-1 ml-4 gap-0'):
+            ui.html(f'<span class="emphasis">{current_holiday.get("name", "")}</span>', sanitize=False).classes('mt-0 mb-0')
+            ui.label(current_holiday.get('description', '')).classes('mt-0 mb-0 text-sm')
+
+    ui.separator().classes('my-2')
+
+    # Month grids with season-change separators
+    prev_season = None
+    for month_idx, month in enumerate(months, 1):
+        month_name = month.get('name', f'Month {month_idx}')
+        month_season = month.get('season', '')
+        days_in_month = month.get('days', 30)
+
+        # Season change separator between months
+        if prev_season is not None and month_season != prev_season:
+            ui.separator().classes('my-2')
+        prev_season = month_season
+
+        ui.label(month_name).classes('calendar-month-header')
+
+        with ui.grid(columns=days_per_week).classes('gap-0'):
+            for day in range(1, days_in_month + 1):
+                is_current = (current and
+                              current.get('calendar_month') == month_idx and
+                              current.get('calendar_day') == day)
+                is_holiday = (month_name, day) in holiday_lookup
+
+                btn_classes = 'calendar-day'
+                if is_current:
+                    btn_classes += ' calendar-day-current'
+                if is_holiday:
+                    btn_classes += ' calendar-day-holiday'
+
+                def make_click_handler(m=month_idx, d=day):
+                    def handler():
+                        save_calendar_date(m, d)
+                        new_season = get_current_season()
+                        if new_season and new_season in config.seasons_list:
+                            config.selected_overland_season = new_season
+                        dialog.close()
+                        global_header.refresh()
+                        overland_content.refresh()
+                    return handler
+
+                btn = ui.button(str(day), on_click=make_click_handler()).props('flat dense')
+                btn.classes(btn_classes)
+
+                if is_holiday:
+                    holiday_info = holiday_lookup[(month_name, day)]
+                    btn.tooltip(holiday_info.get('name', ''))
+
+    ui.separator().classes('my-2')
+
+    # Holiday list
+    ui.label('Holidays').classes('text-lg font-bold mt-0 mb-0')
+
+    if holidays:
+        with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
+            for holiday in holidays:
+                h_name = holiday.get('name', '')
+                h_month = holiday.get('month', '')
+                h_day = holiday.get('day', '')
+
+                is_current_hol = (current_holiday and
+                                  current_holiday.get('name') == h_name)
+
+                holiday_text = f'{h_name} - {h_month} {h_day}'
+
+                def make_holiday_click(month_name=h_month, day=h_day):
+                    def handler():
+                        month_idx = config.calendar_month_lookup.get(month_name)
+                        if month_idx:
+                            save_calendar_date(month_idx, day)
+                            new_season = get_current_season()
+                            if new_season and new_season in config.seasons_list:
+                                config.selected_overland_season = new_season
+                            dialog.close()
+                            global_header.refresh()
+                            overland_content.refresh()
+                    return handler
+
+                if is_current_hol:
+                    ui.html(
+                        f'<span class="emphasis" style="cursor: pointer;">{holiday_text}</span>',
+                        sanitize=False
+                    ).classes('mt-0 mb-0').on('click', make_holiday_click())
+                else:
+                    ui.html(
+                        f'<span style="cursor: pointer;">{holiday_text}</span>',
+                        sanitize=False
+                    ).classes('mt-0 mb-0').on('click', make_holiday_click()).tooltip(holiday.get('description', ''))
+    else:
+        ui.label('No holidays defined').classes('mt-0 mb-0 ml-4 text-gray-500')
+
+    # Close button
+    with ui.row().classes('w-full justify-end mt-2'):
+        ui.button('Close', on_click=dialog.close)
+
+
+def moon_dialog_content(dialog):
+    """Render moon phase selector inside a dialog."""
+    if not config.calendar_data or not config.calendar_data.get('lunar_cycle_length'):
+        ui.label('No lunar tracking configured').classes('text-gray-500')
+        return
+
+    # Initialize lunar day if needed
+    current = config.calendar_data.get('current', {})
+    if current.get('lunar_day') is None:
+        initialize_lunar_day()
+
+    moon_phase = get_moon_phase_info()
+    current_phase_index = moon_phase['phase_index'] if moon_phase else -1
+
+    # Current phase display
+    if moon_phase:
+        if moon_phase.get('is_blood_moon'):
+            ui.html(
+                f'<span class="blood-moon"></span> <span style="color: #cc2222;">{moon_phase["name"]}</span>',
+                sanitize=False
+            ).classes('text-lg font-bold mt-0 mb-0')
+        else:
+            ui.html(
+                f'{moon_phase["icon"]} {moon_phase["name"]}',
+                sanitize=False
+            ).classes('text-lg font-bold mt-0 mb-0')
+
+    ui.separator().classes('my-2')
+
+    with ui.row().classes('items-center gap-1 mt-0 mb-1'):
+        ui.label('Lunar Phase:').classes('mr-2')
+
+        def handle_lunar_minus():
+            adjust_lunar_day(-1)
+            dialog.close()
+            global_header.refresh()
+            overland_content.refresh()
+            open_moon_dialog()
+        ui.button('−', on_click=handle_lunar_minus).props('flat dense').classes('lunar-phase-btn')
+
+        for idx, phase in enumerate(MOON_PHASES):
+            def make_phase_handler(phase_idx=idx):
+                def handler():
+                    set_lunar_day_to_phase(phase_idx)
+                    dialog.close()
+                    global_header.refresh()
+                    overland_content.refresh()
+                    open_moon_dialog()
+                return handler
+
+            btn_classes = 'lunar-phase-btn'
+            if idx == current_phase_index:
+                btn_classes += ' lunar-phase-current'
+
+            ui.button(phase['icon'], on_click=make_phase_handler()).props('flat dense').classes(btn_classes).tooltip(phase['name'])
+
+        def handle_lunar_plus():
+            adjust_lunar_day(1)
+            dialog.close()
+            global_header.refresh()
+            overland_content.refresh()
+            open_moon_dialog()
+        ui.button('+', on_click=handle_lunar_plus).props('flat dense').classes('lunar-phase-btn')
+
+    # Close button
+    with ui.row().classes('w-full justify-end mt-2'):
+        ui.button('Close', on_click=dialog.close)
+
+
+@ui.refreshable
+def global_header():
+    """Persistent header above all tabs — date/moon, weather, days out, zone/overlay/season."""
+
     has_calendar = config.calendar_data is not None
     has_calendar_date = has_calendar and config.calendar_data.get('current') is not None
 
-    # If calendar with date, auto-sync season from calendar
+    # Auto-sync season from calendar
     if has_calendar_date:
         calendar_season = get_current_season()
         if calendar_season and calendar_season in config.seasons_list:
             config.selected_overland_season = calendar_season
 
-    # Dropdowns - season dropdown conditional on calendar state
-    with ui.row().classes('w-full gap-2 mt-1 mb-1'):
-        # Season dropdown: only show if NO calendar or calendar without date
-        if not has_calendar_date:
-            season_select = ui.select(
-                options=config.seasons_list,
-                value=config.selected_overland_season,
-                label='Season'
-            ).classes('flex-1')
-            season_select.on('change', lambda e: (setattr(config, 'selected_overland_season', e.value), overland_content.refresh(), overland_probability_content.refresh()))
-
-        zone_select = ui.select(
-            options=config.overland_zones_list,
-            value=config.selected_overland_zone,
-            label='Zone'
-        ).classes('flex-1')
-
-        overlay_options = ["None"] + config.overland_overlay_list
-        current_overlay = "None" if config.selected_overland_overlay is None else config.selected_overland_overlay
-        overlay_select = ui.select(
-            options=overlay_options,
-            value=current_overlay,
-            label='Overlay'
-        ).classes('flex-1')
-
-        # Change handlers
-        zone_select.on('change', lambda e: (setattr(config, 'selected_overland_zone', e.value), overland_content.refresh(), overland_probability_content.refresh()))
-        overlay_select.on('change', lambda e: (setattr(config, 'selected_overland_overlay', None if e.value == "None" else e.value), overland_content.refresh(), overland_probability_content.refresh()))
-
-    # Action buttons with calendar-aware New Day
+    # --- Row 1: New Day | Date/Moon | Weather | Days Out ---
     def handle_new_day():
         reset_expansion_states("overland")
-        # Advance calendar date if calendar with date is active
         if has_calendar_date:
             advance_calendar_date(1)
-            # Advance lunar day if lunar tracking is active
             if config.calendar_data.get('lunar_cycle_length'):
                 advance_lunar_day(1)
-            # Update season from calendar (in case month changed)
             new_season = get_current_season()
             if new_season and new_season in config.seasons_list:
                 config.selected_overland_season = new_season
         overland_new_day()
+        global_header.refresh()
         overland_content.refresh()
-        calendar_content.refresh()
+        resting_content.refresh()
 
-    with ui.row().classes('gap-2 mt-1 mb-1'):
+    with ui.row().classes('w-full items-center gap-4 mt-0 mb-0'):
         ui.button('New Day', on_click=handle_new_day)
-        ui.button('Regenerate All', on_click=lambda: (reset_expansion_states("overland"), overland_regenerate_day(), overland_content.refresh()))
-        ui.button('Reset', on_click=lambda: (reset_expansion_states("overland"), overland_reset(), overland_content.refresh()))
 
-    # General section
-    ui.label('General').classes('text-lg font-bold mt-0 mb-0')
+        # Date (clickable → calendar popup)
+        if has_calendar:
+            date_string = get_calendar_date_string()
+            if date_string:
+                ui.html(
+                    f'<span style="cursor: pointer;" title="Click to open calendar">{date_string}</span>',
+                    sanitize=False
+                ).classes('mt-0 mb-0').on('click', lambda: open_calendar_dialog())
 
-    # Date display (if calendar active)
-    if has_calendar:
-        date_string = get_calendar_date_string()
-        if date_string:
-            # Build date + moon phase display
-            date_html = date_string
-
-            # Add moon phase if available
+            # Moon phase (clickable → moon popup, separate from date)
             moon_phase = get_moon_phase_info()
             if moon_phase:
                 if moon_phase.get('is_blood_moon'):
-                    # Blood moon with special styling
-                    moon_html = f'&nbsp;&nbsp;<span class="blood-moon"></span> <span style="color: #cc2222;">{moon_phase["name"]}</span>'
+                    moon_html = f'<span class="blood-moon"></span> <span style="color: #cc2222;">{moon_phase["name"]}</span>'
                 else:
-                    moon_html = f'&nbsp;&nbsp;{moon_phase["icon"]} {moon_phase["name"]}'
-                date_html += moon_html
+                    moon_html = f'{moon_phase["icon"]} {moon_phase["name"]}'
+                ui.html(
+                    f'<span style="cursor: pointer;" title="Click to change moon phase">{moon_html}</span>',
+                    sanitize=False
+                ).classes('mt-0 mb-0').on('click', lambda: open_moon_dialog())
 
-            ui.html(date_html, sanitize=False).classes('mt-0 mb-0 ml-4')
+        # Weather display — name only, no effects (clickable → weather popup)
+        if config.generated_overland_weather and config.generated_overland_weather.name:
+            weather_html = f'Weather: <span class="emphasis">{config.generated_overland_weather.name}</span>'
+            ui.html(
+                f'<span style="cursor: pointer;" title="Click to change weather">{weather_html}</span>',
+                sanitize=False
+            ).classes('mt-0 mb-0').on('click', lambda: open_weather_dialog())
+        else:
+            ui.html(
+                '<span style="cursor: pointer;" title="Click to set weather">No weather generated yet</span>',
+                sanitize=False
+            ).classes('mt-0 mb-0 text-gray-500').on('click', lambda: open_weather_dialog())
 
-            # Holiday display (if current date is a holiday)
-            current_holiday = get_current_holiday()
-            if current_holiday:
-                holiday_text = f"{current_holiday.get('name', '')} - {current_holiday.get('description', '')}"
-                ui.label(holiday_text).classes('mt-0 mb-0 ml-4 text-sm')
+        # Days Out (clickable → confirmation dialog → reset)
+        def handle_days_out_click():
+            with ui.dialog() as dlg, ui.card():
+                ui.label(f'Reset overland state? ({config.generated_overland_days} days, weather, encounters)').classes('mb-2')
+                with ui.row().classes('w-full justify-end gap-2'):
+                    ui.button('Cancel', on_click=dlg.close)
+                    def confirm_reset():
+                        dlg.close()
+                        reset_expansion_states("overland")
+                        overland_reset()
+                        global_header.refresh()
+                        overland_content.refresh()
+                    ui.button('Reset', on_click=confirm_reset).props('color=negative')
+            dlg.open()
 
-    # Days count
-    ui.label(f'{config.generated_overland_days} days').classes('mt-0 mb-0 ml-4')
-    
-    # Weather - indented under General
+        ui.html(
+            f'<span style="cursor: pointer;" title="Click to reset">'
+            f'{config.generated_overland_days} days</span>',
+            sanitize=False
+        ).classes('mt-0 mb-0').on('click', handle_days_out_click)
+
+    # --- Row 2: Holiday info (conditional) ---
+    if has_calendar_date:
+        current_holiday = get_current_holiday()
+        if current_holiday:
+            with ui.row().classes('w-full items-center gap-2 mt-0 mb-0'):
+                holiday_text = f"{current_holiday.get('name', '')} — {current_holiday.get('description', '')}"
+                ui.label(holiday_text).classes('mt-0 mb-0 text-sm')
+
+    # --- Row 3: Zone / Overlay / Season dropdowns ---
+    def handle_header_zone_change(e):
+        config.selected_overland_zone = e.value
+        global_header.refresh()
+        overland_content.refresh()
+        resting_content.refresh()
+        overland_probability_content.refresh()
+
+    def handle_header_overlay_change(e):
+        config.selected_overland_overlay = None if e.value == "None" else e.value
+        global_header.refresh()
+        overland_content.refresh()
+        resting_content.refresh()
+        overland_probability_content.refresh()
+
+    def handle_header_season_change(e):
+        config.selected_overland_season = e.value
+        global_header.refresh()
+        overland_content.refresh()
+        resting_content.refresh()
+        overland_probability_content.refresh()
+
+    with ui.row().classes('w-full gap-2 mt-1 mb-1'):
+        ui.select(
+            options=config.overland_zones_list,
+            value=config.selected_overland_zone,
+            label='Overland Zone',
+            on_change=handle_header_zone_change
+        ).classes('flex-1')
+
+        overlay_options = ["None"] + config.overland_overlay_list
+        current_overlay = "None" if config.selected_overland_overlay is None else config.selected_overland_overlay
+        ui.select(
+            options=overlay_options,
+            value=current_overlay,
+            label='Overlay Zone',
+            on_change=handle_header_overlay_change
+        ).classes('flex-1')
+
+        # Season dropdown: only show if NO calendar date (calendar drives season)
+        if not has_calendar_date:
+            ui.select(
+                options=config.seasons_list,
+                value=config.selected_overland_season,
+                label='Season',
+                on_change=handle_header_season_change
+            ).classes('flex-1')
+
+    ui.separator().classes('my-1')
+
+
+@ui.refreshable
+def overland_content():
+    """Refreshable Overland Travel tab content."""
+
+    # Weather with effects + popup button
     if config.generated_overland_weather and config.generated_overland_weather.name:
-        with ui.row().classes('items-center gap-0 mt-0 mb-0 ml-4'):
-            # Parse weather string to emphasize only the name
+        with ui.row().classes('items-center gap-0 mt-0 mb-0'):
             weather_str = str(config.generated_overland_weather)
             if '(' in weather_str:
-                # Format: "Name (effects)"
                 name_part = weather_str.split('(')[0].strip()
                 effects_part = '(' + weather_str.split('(', 1)[1]
                 ui.html(f'Weather: <span class="emphasis">{name_part}</span> {effects_part}', sanitize=False)
             else:
-                # Just the name
                 ui.html(f'Weather: <span class="emphasis">{weather_str}</span>', sanitize=False)
-            ui.button('🔄', on_click=lambda: (regenerate_individual_weather(), overland_content.refresh())).props('flat dense')
-    else:
-        ui.label('No weather generated yet').classes('mt-0 mb-0 ml-4 text-gray-500')
-    
+            ui.button('🔄', on_click=lambda: open_weather_dialog()).props('flat dense')
+
     # Encounters section
-    ui.label('Encounters').classes('text-lg font-bold mt-0 mb-0')
-    
+    def handle_regenerate_encounters():
+        reset_expansion_states("overland")
+        overland_regenerate_day()
+        global_header.refresh()
+        overland_content.refresh()
+        resting_content.refresh()
+
+    with ui.row().classes('items-center gap-0 mt-0 mb-0'):
+        ui.label('Encounters').classes('text-lg font-bold')
+        ui.button('🔄', on_click=handle_regenerate_encounters).props('flat dense')
+
     for watch in config.watches_list:
         encounter = config.generated_overland_encounters.get(watch)
         if encounter:
             render_encounter(encounter, watch, "overland", overland_content)
-    
+
+
+@ui.refreshable
+def resting_content():
+    """Refreshable Resting tab content."""
+
     # Rest Check section
     ui.label('Rest Check').classes('text-lg font-bold mt-0 mb-0')
-    
+
     if config.generated_overland_rest_info:
         rest_info = config.generated_overland_rest_info
-        
-        # Rest DCs - indented
+
         ui.label(f'Rest DCs for {config.selected_overland_season}').classes('font-bold mt-0 mb-0 ml-4')
         rest_dcs = rest_info.get('rest_dcs', [])
         if rest_dcs:
             with ui.column().classes('mt-0 mb-0 ml-8'):
                 for item in rest_dcs:
                     ui.label(f"{item.get('camp', '')}  {item.get('dc', '')}").classes('mt-0 mb-0')
-        
-        # Weather Modifiers (only if exist) - indented
+
         weather_mods = rest_info.get('weather_modifiers', [])
         if weather_mods:
             ui.label('Weather Modifiers').classes('font-bold mt-0 mb-0 ml-4')
             with ui.column().classes('mt-0 mb-0 ml-8'):
                 for mod in weather_mods:
-                    # Emphasize the weather effect
                     mod_text = f"{mod.get('description', '')}  {mod.get('modifier', '')}"
                     ui.html(f'<span class="emphasis">{mod_text}</span>', sanitize=False).classes('mt-0 mb-0')
-        
-        # Situational Modifiers - indented
+
         ui.label('Situational Modifiers').classes('font-bold mt-0 mb-0 ml-4')
         situational_mods = rest_info.get('situational_modifiers', [])
         if situational_mods:
@@ -311,14 +656,17 @@ def site_content():
     """Refreshable Site tab content."""
     
     # Zone dropdown
+    def handle_site_zone_change(e):
+        config.selected_site_zone = e.value
+        site_probability_content.refresh()
+
     with ui.row().classes('w-full mt-1 mb-1'):
-        zone_select = ui.select(
+        ui.select(
             options=config.site_zones_list,
             value=config.selected_site_zone,
-            label='Site Zone'
+            label='Site Zone',
+            on_change=handle_site_zone_change
         ).classes('flex-1')
-        
-        zone_select.on('change', lambda e: (setattr(config, 'selected_site_zone', e.value), site_content.refresh(), site_probability_content.refresh()))
     
     # Action buttons
     with ui.row().classes('gap-2 mt-1 mb-1'):
@@ -392,162 +740,6 @@ def site_content():
 
 
 @ui.refreshable
-def calendar_content():
-    """Refreshable Calendar tab content."""
-
-    # Safety check - should not be called if no calendar
-    if not config.calendar_data:
-        ui.label('No calendar loaded').classes('text-gray-500')
-        return
-
-    # Initialize lunar day if calendar has lunar settings but no lunar_day yet
-    current = config.calendar_data.get('current', {})
-    if config.calendar_data.get('lunar_cycle_length') and current.get('lunar_day') is None:
-        initialize_lunar_day()
-        current = config.calendar_data.get('current', {})  # Refresh after initialization
-
-    # Get calendar info
-    months = config.calendar_data.get('months', [])
-    holidays = config.calendar_data.get('holidays', [])
-    days_per_week = config.calendar_data.get('days_per_week', 6)
-
-    # Build holiday lookup: (month_name, day) -> holiday
-    holiday_lookup = {}
-    for holiday in holidays:
-        key = (holiday.get('month'), holiday.get('day'))
-        holiday_lookup[key] = holiday
-
-    # Current date display at top
-    date_string = get_calendar_date_string()
-    if date_string:
-        date_html = date_string
-
-        # Add moon phase if available
-        moon_phase = get_moon_phase_info()
-        if moon_phase:
-            if moon_phase.get('is_blood_moon'):
-                moon_html = f'&nbsp;&nbsp;<span class="blood-moon"></span> <span style="color: #cc2222;">{moon_phase["name"]}</span>'
-            else:
-                moon_html = f'&nbsp;&nbsp;{moon_phase["icon"]} {moon_phase["name"]}'
-            date_html += moon_html
-
-        ui.html(date_html, sanitize=False).classes('text-lg font-bold mt-0 mb-0')
-
-    # If current date is a holiday, show holiday info
-    current_holiday = get_current_holiday()
-    if current_holiday:
-        with ui.column().classes('mt-0 mb-1 ml-4 gap-0'):
-            ui.html(f'🎉 <span class="emphasis">{current_holiday.get("name", "")}</span>', sanitize=False).classes('mt-0 mb-0')
-            ui.label(current_holiday.get('description', '')).classes('mt-0 mb-0 text-sm')
-
-    ui.separator().classes('my-2')
-
-    # Render all month grids
-    for month_idx, month in enumerate(months, 1):
-        month_name = month.get('name', f'Month {month_idx}')
-        days_in_month = month.get('days', 30)
-
-        # Month header
-        ui.label(month_name).classes('calendar-month-header')
-
-        # Create grid for this month
-        with ui.grid(columns=days_per_week).classes('gap-0'):
-            for day in range(1, days_in_month + 1):
-                # Determine styling
-                is_current = (current and
-                              current.get('calendar_month') == month_idx and
-                              current.get('calendar_day') == day)
-                is_holiday = (month_name, day) in holiday_lookup
-
-                # Build CSS classes
-                btn_classes = 'calendar-day'
-                if is_current:
-                    btn_classes += ' calendar-day-current'
-                if is_holiday:
-                    btn_classes += ' calendar-day-holiday'
-
-                # Create day button with closure for correct values
-                def make_click_handler(m=month_idx, d=day):
-                    def handler():
-                        save_calendar_date(m, d)
-                        calendar_content.refresh()
-                        # Also refresh overland if it's using calendar season
-                        overland_content.refresh()
-                    return handler
-
-                btn = ui.button(str(day), on_click=make_click_handler()).props('flat dense')
-                btn.classes(btn_classes)
-
-                # Add tooltip for holidays
-                if is_holiday:
-                    holiday_info = holiday_lookup[(month_name, day)]
-                    btn.tooltip(holiday_info.get('name', ''))
-
-    # Lunar phase selector (if lunar tracking is enabled)
-    if config.calendar_data.get('lunar_cycle_length'):
-        moon_phase = get_moon_phase_info()
-        current_phase_index = moon_phase['phase_index'] if moon_phase else -1
-
-        with ui.row().classes('items-center gap-1 mt-2 mb-1'):
-            ui.label('Lunar Phase:').classes('mr-2')
-
-            # Minus button
-            def handle_lunar_minus():
-                adjust_lunar_day(-1)
-                calendar_content.refresh()
-                overland_content.refresh()
-            ui.button('−', on_click=handle_lunar_minus).props('flat dense').classes('lunar-phase-btn')
-
-            # Phase icon buttons
-            for idx, phase in enumerate(MOON_PHASES):
-                def make_phase_handler(phase_idx=idx):
-                    def handler():
-                        set_lunar_day_to_phase(phase_idx)
-                        calendar_content.refresh()
-                        overland_content.refresh()
-                    return handler
-
-                btn_classes = 'lunar-phase-btn'
-                if idx == current_phase_index:
-                    btn_classes += ' lunar-phase-current'
-
-                ui.button(phase['icon'], on_click=make_phase_handler()).props('flat dense').classes(btn_classes).tooltip(phase['name'])
-
-            # Plus button
-            def handle_lunar_plus():
-                adjust_lunar_day(1)
-                calendar_content.refresh()
-                overland_content.refresh()
-            ui.button('+', on_click=handle_lunar_plus).props('flat dense').classes('lunar-phase-btn')
-
-    ui.separator().classes('my-2')
-
-    # Holiday list at bottom
-    ui.label('Holidays').classes('text-lg font-bold mt-0 mb-0')
-
-    if holidays:
-        with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
-            for holiday in holidays:
-                h_name = holiday.get('name', '')
-                h_month = holiday.get('month', '')
-                h_day = holiday.get('day', '')
-
-                # Check if this is the current holiday
-                is_current_holiday = (current_holiday and
-                                      current_holiday.get('name') == h_name)
-
-                holiday_text = f'{h_name} - {h_month} {h_day}'
-
-                if is_current_holiday:
-                    ui.html(f'<span class="emphasis">{holiday_text}</span>', sanitize=False).classes('mt-0 mb-0')
-                else:
-                    label = ui.label(holiday_text).classes('mt-0 mb-0')
-                    label.tooltip(holiday.get('description', ''))
-    else:
-        ui.label('No holidays defined').classes('mt-0 mb-0 ml-4 text-gray-500')
-
-
-@ui.refreshable
 def site_probability_content():
     """Refreshable Site probability distribution tab content."""
 
@@ -596,16 +788,13 @@ def overland_probability_content():
 
     def handle_zone_change(e):
         config.selected_overland_zone = e.value
+        global_header.refresh()
         overland_probability_content.refresh()
         overland_content.refresh()
 
     def handle_overlay_change(e):
         config.selected_overland_overlay = None if e.value == "None" else e.value
-        overland_probability_content.refresh()
-        overland_content.refresh()
-
-    def handle_season_change(e):
-        config.selected_overland_season = e.value
+        global_header.refresh()
         overland_probability_content.refresh()
         overland_content.refresh()
 
@@ -613,8 +802,8 @@ def overland_probability_content():
         config.selected_overland_watch = e.value
         overland_probability_content.refresh()
 
-    # Four dropdowns in a row
-    with ui.row().classes('w-full gap-2 mt-1 mb-1'):
+    # Dropdowns synced with header — zone, overlay from config globals + local watch; season displayed as text
+    with ui.row().classes('w-full gap-2 mt-1 mb-1 items-center'):
         ui.select(
             options=config.overland_zones_list,
             value=config.selected_overland_zone,
@@ -632,18 +821,13 @@ def overland_probability_content():
         ).classes('flex-1')
 
         ui.select(
-            options=config.seasons_list,
-            value=config.selected_overland_season,
-            label='Season',
-            on_change=handle_season_change
-        ).classes('flex-1')
-
-        ui.select(
             options=config.watches_list,
             value=config.selected_overland_watch,
             label='Watch',
             on_change=handle_watch_change
         ).classes('flex-1')
+
+        ui.label(config.selected_overland_season).classes('mt-0 mb-0')
 
     zone = config.selected_overland_zone
     overlay = config.selected_overland_overlay
@@ -883,31 +1067,44 @@ def index():
         </h1>
     ''', sanitize=False)
     
-    # Tabs - Calendar tab only shown if calendar is loaded
+    # Persistent global header above tabs
+    global_header()
+
+    # 8 tabs
     with ui.tabs().classes('w-full') as tabs:
-        overland_tab = ui.tab('Overland')
-        site_tab = ui.tab('Site')
-        if config.calendar_data:
-            calendar_tab = ui.tab('Calendar')
-        site_prob_tab = ui.tab('Prob. Dist. Site')
-        overland_prob_tab = ui.tab('Prob. Dist. Overland')
+        overland_tab = ui.tab('Overland Travel')
+        forage_tab = ui.tab('Forage')
+        resting_tab = ui.tab('Resting')
+        site_tab = ui.tab('Site Exploration')
+        settlements_tab = ui.tab('Settlements')
+        creatures_tab = ui.tab('Creatures')
+        overland_prob_tab = ui.tab('Overland Enc. Prob.')
+        site_prob_tab = ui.tab('Site Enc. Prob.')
 
     with ui.tab_panels(tabs, value=overland_tab).classes('w-full'):
         with ui.tab_panel(overland_tab):
             overland_content()
 
+        with ui.tab_panel(forage_tab):
+            ui.label('Coming soon').classes('text-gray-500')
+
+        with ui.tab_panel(resting_tab):
+            resting_content()
+
         with ui.tab_panel(site_tab):
             site_content()
 
-        if config.calendar_data:
-            with ui.tab_panel(calendar_tab):
-                calendar_content()
+        with ui.tab_panel(settlements_tab):
+            ui.label('Coming soon').classes('text-gray-500')
 
-        with ui.tab_panel(site_prob_tab):
-            site_probability_content()
+        with ui.tab_panel(creatures_tab):
+            ui.label('Coming soon').classes('text-gray-500')
 
         with ui.tab_panel(overland_prob_tab):
             overland_probability_content()
+
+        with ui.tab_panel(site_prob_tab):
+            site_probability_content()
 
 
 def main():
