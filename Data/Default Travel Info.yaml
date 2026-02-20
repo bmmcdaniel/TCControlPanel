@@ -1,0 +1,49 @@
+travel_points:
+  - mode: "On Foot"
+    points: 6
+  - mode: "Mount, Horse"
+    points: 8
+  - mode: "Mount, Mule"
+    points: 6
+  - mode: "Vehicle, Carriage"
+    points: 8
+  - mode: "Vehicle, Cart"
+    points: 6
+  - mode: "Vehicle, 2-Horse Wagon"
+    points: 6
+  - mode: "Vehicle, 4-Horse Wagon"
+    points: 8
+
+travel_modifiers:
+  - name: "Forced March"
+    modifier: "133%"
+  - name: "Encumbered"
+    modifier: "50%"
+  - name: "Exhausted"
+    modifier: "33%"
+
+travel_costs:
+  - terrain: "Meadows"
+    cost: 2
+  - terrain: "Farmland"
+    cost: 2
+  - terrain: "Road"
+    cost: 2
+  - terrain: "Forest, Light"
+    cost: 3
+  - terrain: "Hills, Rolling"
+    cost: 3
+  - terrain: "Bog"
+    cost: 4
+  - terrain: "Forest, Dense"
+    cost: 4
+  - terrain: "Hills, Craggy"
+    cost: 4
+  - terrain: "Forest, Thorny"
+    cost: 6
+  - terrain: "Mountains"
+    cost: 6
+  - terrain: "Swamp"
+    cost: 6
+
+travel_cost_reminder: "Unassisted river crossings and similar obstacles may cost additional travel points."

@@ -88,6 +88,11 @@ def load_all_data() -> bool:
         log_error("Failed to load rest info file")
         return False
 
+    # Step 7.5: Load travel info
+    if not load_travelinfo_file():
+        log_error("Failed to load travel info file")
+        return False
+
     # Step 8: Load encounter by zone (Excel)
     if not load_encounter_by_zone_excel():
         log_error("Failed to load encounter by zone Excel file")
@@ -143,6 +148,7 @@ def load_datafile_config() -> bool:
         config.watches_file = files.get('watches_file', '')
         config.encounter_by_zone_file = files.get('encounter_by_zone_file', '')
         config.weather_by_season_file = files.get('weather_by_season_file', '')
+        config.travelinfo_file = files.get('travelinfo_file', '')
         config.calendar_file = files.get('calendar_file', '')
 
         log_info(f"Loaded master config from {config.datafile_file}")
@@ -311,7 +317,8 @@ def load_encounters_file() -> bool:
                 'habitat_notes': encounter.get('habitat_notes'),
                 'season': season_dict,
                 'sparks': encounter['sparks'],
-                'watch': encounter['watch']
+                'watch': encounter['watch'],
+                'type': encounter.get('type', 'Creature')
             }
         
         log_info(f"Loaded {len(config.encounters_data)} encounters")
@@ -373,6 +380,35 @@ def load_restinfo_file() -> bool:
         
     except Exception as e:
         log_error(f"Error loading rest info file: {e}")
+        return False
+
+
+def load_travelinfo_file() -> bool:
+    """
+    Load travel information (points, modifiers, costs).
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        verbose_print(f"Loading travel info from {config.travelinfo_file}")
+        with open(config.travelinfo_file, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+
+        config.travelinfo_data = data
+
+        # Pre-parse modifier percentages into floats (not using parse_percentage
+        # because that clamps to 1.0, and travel modifiers can exceed 100%)
+        for mod in config.travelinfo_data.get('travel_modifiers', []):
+            pct_str = mod['modifier'].strip().rstrip('%').strip()
+            mod['modifier_float'] = float(pct_str) / 100.0
+
+        log_info(f"Loaded travel information")
+
+        return True
+
+    except Exception as e:
+        log_error(f"Error loading travel info file: {e}")
         return False
 
 

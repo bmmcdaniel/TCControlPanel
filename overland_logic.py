@@ -65,23 +65,19 @@ def overland_new_day() -> None:
 
 def overland_regenerate_day() -> None:
     """
-    Regenerate current day's content without advancing day counter.
-    
+    Regenerate current day's encounters without advancing day counter.
+    Does NOT regenerate weather or rest info.
+
     Algorithm:
     1. Do NOT change generated_overland_days
-    2. Generate weather
-    3. Generate encounters for all watches
-    4. Generate rest info
+    2. Regenerate encounters for all watches
     """
-    log_info(f"Overland: Regenerating Day {config.generated_overland_days}")
-    verbose_print(f"=== Regenerating Day {config.generated_overland_days} ===")
-    
-    # Regenerate all content
-    generate_overland_weather()
+    log_info(f"Overland: Regenerating Day {config.generated_overland_days} encounters")
+    verbose_print(f"=== Regenerating Day {config.generated_overland_days} encounters ===")
+
     generate_overland_encounters()
-    generate_overland_rest_info()
-    
-    verbose_print(f"=== Day {config.generated_overland_days} regeneration complete ===")
+
+    verbose_print(f"=== Day {config.generated_overland_days} encounter regeneration complete ===")
 
 
 def generate_overland_weather() -> Weather:

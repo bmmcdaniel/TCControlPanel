@@ -32,6 +32,7 @@ encounters_file: str = ""
 zones_file: str = ""
 weathers_file: str = ""
 restinfo_file: str = ""
+travelinfo_file: str = ""
 seasons_file: str = ""
 watches_file: str = ""
 encounter_by_zone_file: str = ""
@@ -55,6 +56,7 @@ zones_data: Dict[str, Dict] = {}           # Zone name -> {types: List[str], enc
 weathers_data: Dict[str, Dict] = {}        # Weather name -> {effects: List[str]}
 encounters_data: Dict[str, Dict] = {}      # Encounter name -> {description, habitat, sparks, watch, season}
 restinfo_data: Dict = {}                   # Rest check tables and modifiers
+travelinfo_data: Dict = {}                 # Travel points, modifiers, and costs
 seasons_data: Dict[str, Dict] = {}         # Season name -> {encounter_modification: str}
 
 # xarray DataArrays (multi-dimensional labeled arrays)
@@ -85,6 +87,9 @@ selected_site_zone: str = ""           # Must be member of site_zones_list
 # ============================================================================
 # GENERATED STATE VARIABLES
 # ============================================================================
+
+# Forage state
+generated_forage_encounter: Optional[Encounter] = None        # Last generated forage encounter
 
 # Overland mode state
 generated_overland_days: int = 0                              # Number of days elapsed

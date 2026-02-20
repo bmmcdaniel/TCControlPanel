@@ -31,6 +31,7 @@ from site_logic import (
     site_reset, site_new_turn, site_regenerate_turn,
     site_add_timer, site_delete_timer, regenerate_individual_site_encounter
 )
+from forage_logic import generate_forage_encounter, regenerate_forage_encounter
 from models import Encounter
 
 
@@ -50,7 +51,7 @@ def reset_expansion_states(mode: str = "all"):
         app.storage.user['site_expansions'] = {}
 
 
-def render_encounter(encounter: Encounter, label: str, mode: str, refresh_func):
+def render_encounter(encounter: Encounter, label: str, mode: str, refresh_func, show_regen: bool = True, default_expanded: bool = False):
     """Render a single encounter with expansion control."""
     has_encounter = encounter.is_encounter()
     
@@ -84,8 +85,9 @@ def render_encounter(encounter: Encounter, label: str, mode: str, refresh_func):
                     name_label = ui.html(f'<span style="cursor: pointer;">{display_text}</span>', sanitize=False).classes('mt-0 mb-0')
                     
                     # Regenerate button
-                    ui.button('🔄', on_click=regen).props('flat dense')
-                
+                    if show_regen:
+                        ui.button('🔄', on_click=regen).props('flat dense')
+
                 # Expandable content container (created SECOND so it appears below)
                 # Remove all padding, margins, and gap for ultra-tight spacing
                 details_container = ui.column().classes('mt-0 mb-0 gap-0').style('padding: 0 !important; margin: 0 !important; gap: 0 !important;')
@@ -93,7 +95,7 @@ def render_encounter(encounter: Encounter, label: str, mode: str, refresh_func):
                 # Check if this encounter should be initially expanded (persisted in storage)
                 storage_key = f'{mode}_expansions'
                 expansions = app.storage.user.get(storage_key, {})
-                details_container.visible = expansions.get(label, False)
+                details_container.visible = expansions.get(label, default_expanded)
 
                 # Toggle function - saves state so it persists across refreshes
                 def toggle_expand():
@@ -129,14 +131,15 @@ def render_encounter(encounter: Encounter, label: str, mode: str, refresh_func):
             with ui.expansion(f'{label}: No Encounter', icon='expand_more').classes('mt-0 mb-0').props('disable').style('margin-left: 0 !important; padding-left: 0 !important;'):
                 pass  # Empty expansion
             
-            def regen_no_enc():
-                if mode == "overland":
-                    regenerate_individual_overland_encounter(label)
-                else:
-                    regenerate_individual_site_encounter(label)
-                refresh_func.refresh()
-            
-            ui.button('🔄', on_click=regen_no_enc).props('flat dense')
+            if show_regen:
+                def regen_no_enc():
+                    if mode == "overland":
+                        regenerate_individual_overland_encounter(label)
+                    else:
+                        regenerate_individual_site_encounter(label)
+                    refresh_func.refresh()
+
+                ui.button('🔄', on_click=regen_no_enc).props('flat dense')
 
 
 def open_weather_dialog():
@@ -167,6 +170,7 @@ def weather_dialog_content(dialog):
         regenerate_individual_weather()
         dialog.close()
         global_header.refresh()
+        overland_travel_content.refresh()
         overland_content.refresh()
         resting_content.refresh()
 
@@ -207,6 +211,7 @@ def weather_dialog_content(dialog):
                             generate_overland_rest_info()
                             dialog.close()
                             global_header.refresh()
+                            overland_travel_content.refresh()
                             overland_content.refresh()
                             resting_content.refresh()
                         return handler
@@ -311,6 +316,8 @@ def calendar_dialog_content(dialog):
                         dialog.close()
                         global_header.refresh()
                         overland_content.refresh()
+                        overland_probability_content.refresh()
+                        forage_content.refresh()
                     return handler
 
                 btn = ui.button(str(day), on_click=make_click_handler()).props('flat dense')
@@ -348,6 +355,8 @@ def calendar_dialog_content(dialog):
                             dialog.close()
                             global_header.refresh()
                             overland_content.refresh()
+                            overland_probability_content.refresh()
+                            forage_content.refresh()
                     return handler
 
                 if is_current_hol:
@@ -462,8 +471,11 @@ def global_header():
                 config.selected_overland_season = new_season
         overland_new_day()
         global_header.refresh()
+        overland_travel_content.refresh()
         overland_content.refresh()
         resting_content.refresh()
+        overland_probability_content.refresh()
+        forage_content.refresh()
 
     with ui.row().classes('w-full items-center gap-4 mt-0 mb-0'):
         ui.button('New Day', on_click=handle_new_day)
@@ -535,23 +547,29 @@ def global_header():
     def handle_header_zone_change(e):
         config.selected_overland_zone = e.value
         global_header.refresh()
+        overland_travel_content.refresh()
         overland_content.refresh()
         resting_content.refresh()
         overland_probability_content.refresh()
+        forage_content.refresh()
 
     def handle_header_overlay_change(e):
         config.selected_overland_overlay = None if e.value == "None" else e.value
         global_header.refresh()
+        overland_travel_content.refresh()
         overland_content.refresh()
         resting_content.refresh()
         overland_probability_content.refresh()
+        forage_content.refresh()
 
     def handle_header_season_change(e):
         config.selected_overland_season = e.value
         global_header.refresh()
+        overland_travel_content.refresh()
         overland_content.refresh()
         resting_content.refresh()
         overland_probability_content.refresh()
+        forage_content.refresh()
 
     with ui.row().classes('w-full gap-2 mt-1 mb-1'):
         ui.select(
@@ -582,29 +600,163 @@ def global_header():
     ui.separator().classes('my-1')
 
 
+def _parse_difficult_travel(effects):
+    """
+    Check weather effects for Difficult Travel and return the multiplier.
+
+    Accepts:
+      "Difficult Travel" -> 0.50 (default)
+      "Difficult Travel (-25%)" -> 0.75
+      "Difficult Travel (75%)" -> 0.75
+
+    Returns:
+        (multiplier, effect_string) if found, else (1.0, None)
+    """
+    import re
+    for effect in effects:
+        if not effect.lower().startswith('difficult travel'):
+            continue
+        # Try to extract a percentage from parentheses
+        match = re.search(r'\((-?\d+)%\)', effect)
+        if match:
+            value = int(match.group(1))
+            if value < 0:
+                # "-25%" means reduce by 25%, so multiplier is 0.75
+                multiplier = 1.0 + value / 100.0
+            else:
+                # "75%" means 75% of base
+                multiplier = value / 100.0
+        else:
+            # Plain "Difficult Travel" with no percentage -> 50%
+            multiplier = 0.50
+        return (multiplier, effect)
+    return (1.0, None)
+
+
+@ui.refreshable
+def overland_travel_content():
+    """Refreshable Overland Travel tab content — travel points and costs reference."""
+
+    # Weather + Zone header
+    overlay_text = f' + {config.selected_overland_overlay}' if config.selected_overland_overlay else ''
+    weather_name = ''
+    weather_effects = []
+    if config.generated_overland_weather and config.generated_overland_weather.name:
+        weather_name = config.generated_overland_weather.name
+        weather_effects = config.generated_overland_weather.effects or []
+
+    # Check for difficult travel in weather effects
+    weather_travel_multiplier, difficult_travel_effect = _parse_difficult_travel(weather_effects)
+
+    if weather_name:
+        if difficult_travel_effect:
+            weather_html = (f'Weather: {weather_name} '
+                            f'(<span class="emphasis">{difficult_travel_effect}</span>)'
+                            f' | Zone: {config.selected_overland_zone}{overlay_text}')
+        else:
+            weather_html = (f'Weather: {weather_name}'
+                            f' | Zone: {config.selected_overland_zone}{overlay_text}')
+        ui.html(weather_html, sanitize=False).classes('mt-0 mb-1')
+    else:
+        ui.label(f'No weather generated | Zone: {config.selected_overland_zone}{overlay_text}').classes('mt-0 mb-1 text-gray-500')
+
+    # --- Travel Points section ---
+    ui.label('Travel Points').classes('text-lg font-bold mt-0 mb-0')
+
+    travel_points = config.travelinfo_data.get('travel_points', [])
+    travel_modifiers = config.travelinfo_data.get('travel_modifiers', [])
+
+    # Compute active modifier multiplier (checkboxes + weather)
+    active_multiplier = weather_travel_multiplier
+    for mod in travel_modifiers:
+        storage_key = f'travel_mod_{mod["name"]}'
+        if app.storage.user.get(storage_key, False):
+            active_multiplier *= mod['modifier_float']
+
+    # Travel points table
+    if travel_points:
+        with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
+            # Header row
+            with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                ui.label('Mode').classes('font-bold').style('width: 14rem; flex-shrink: 0;')
+                ui.label('Points').classes('font-bold').style('width: 4rem; flex-shrink: 0; text-align: center;')
+
+            for tp in travel_points:
+                adjusted = round(tp['points'] * active_multiplier)
+                with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                    ui.label(tp['mode']).style('width: 14rem; flex-shrink: 0; white-space: normal; word-wrap: break-word; padding-left: 1em; text-indent: -1em;')
+                    if active_multiplier != 1.0:
+                        ui.html(f'<span class="emphasis">{adjusted}</span>', sanitize=False).style('width: 4rem; flex-shrink: 0; text-align: center;')
+                    else:
+                        ui.label(str(adjusted)).style('width: 4rem; flex-shrink: 0; text-align: center;')
+
+    # Modifier checkboxes (below table)
+    if travel_modifiers:
+        with ui.row().classes('gap-4 mt-1 mb-0 ml-4'):
+            for mod in travel_modifiers:
+                mod_name = mod['name']
+                storage_key = f'travel_mod_{mod_name}'
+
+                if storage_key not in app.storage.user:
+                    app.storage.user[storage_key] = False
+
+                def make_checkbox_handler(key=storage_key):
+                    def handler(e):
+                        app.storage.user[key] = e.value
+                        overland_travel_content.refresh()
+                    return handler
+
+                ui.checkbox(
+                    f'{mod_name} ({mod["modifier"]})',
+                    value=app.storage.user.get(storage_key, False),
+                    on_change=make_checkbox_handler()
+                )
+
+    # --- Travel Points Cost section ---
+    ui.label('Travel Points Cost').classes('text-lg font-bold mt-2 mb-0')
+
+    travel_costs = config.travelinfo_data.get('travel_costs', [])
+    if travel_costs:
+        with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
+            # Header row
+            with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                ui.label('Terrain').classes('font-bold').style('width: 14rem; flex-shrink: 0;')
+                ui.label('Cost').classes('font-bold').style('width: 4rem; flex-shrink: 0; text-align: center;')
+
+            for tc in travel_costs:
+                with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                    ui.label(tc['terrain']).style('width: 14rem; flex-shrink: 0; white-space: normal; word-wrap: break-word; padding-left: 1em; text-indent: -1em;')
+                    ui.label(str(tc['cost'])).style('width: 4rem; flex-shrink: 0; text-align: center;')
+
+    # Reminder text
+    reminder = config.travelinfo_data.get('travel_cost_reminder', '')
+    if reminder:
+        ui.label(reminder).classes('mt-2 mb-0 ml-4')
+
+
 @ui.refreshable
 def overland_content():
     """Refreshable Overland Travel tab content."""
 
-    # Weather with effects + popup button
+    # Weather with effects (clickable → weather popup)
     if config.generated_overland_weather and config.generated_overland_weather.name:
-        with ui.row().classes('items-center gap-0 mt-0 mb-0'):
-            weather_str = str(config.generated_overland_weather)
-            if '(' in weather_str:
-                name_part = weather_str.split('(')[0].strip()
-                effects_part = '(' + weather_str.split('(', 1)[1]
-                ui.html(f'Weather: <span class="emphasis">{name_part}</span> {effects_part}', sanitize=False)
-            else:
-                ui.html(f'Weather: <span class="emphasis">{weather_str}</span>', sanitize=False)
-            ui.button('🔄', on_click=lambda: open_weather_dialog()).props('flat dense')
+        weather_str = str(config.generated_overland_weather)
+        if '(' in weather_str:
+            name_part = weather_str.split('(')[0].strip()
+            effects_part = '(' + weather_str.split('(', 1)[1]
+            weather_html = f'Weather: <span class="emphasis">{name_part}</span> {effects_part}'
+        else:
+            weather_html = f'Weather: <span class="emphasis">{weather_str}</span>'
+        ui.html(
+            f'<span style="cursor: pointer;" title="Click to change weather">{weather_html}</span>',
+            sanitize=False
+        ).classes('mt-0 mb-0').on('click', lambda: open_weather_dialog())
 
     # Encounters section
     def handle_regenerate_encounters():
         reset_expansion_states("overland")
         overland_regenerate_day()
-        global_header.refresh()
         overland_content.refresh()
-        resting_content.refresh()
 
     with ui.row().classes('items-center gap-0 mt-0 mb-0'):
         ui.label('Encounters').classes('text-lg font-bold')
@@ -620,33 +772,47 @@ def overland_content():
 def resting_content():
     """Refreshable Resting tab content."""
 
-    # Rest Check section
-    ui.label('Rest Check').classes('text-lg font-bold mt-0 mb-0')
-
     if config.generated_overland_rest_info:
         rest_info = config.generated_overland_rest_info
 
-        ui.label(f'Rest DCs for {config.selected_overland_season}').classes('font-bold mt-0 mb-0 ml-4')
+        # Rest DCs table
+        ui.label(f'Rest DCs for {config.selected_overland_season}').classes('text-lg font-bold mt-0 mb-0')
         rest_dcs = rest_info.get('rest_dcs', [])
         if rest_dcs:
-            with ui.column().classes('mt-0 mb-0 ml-8'):
+            with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
+                with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                    ui.label('Camp').classes('font-bold').style('width: 18rem; flex-shrink: 0;')
+                    ui.label('DC').classes('font-bold').style('width: 10rem; flex-shrink: 0; text-align: center;')
                 for item in rest_dcs:
-                    ui.label(f"{item.get('camp', '')}  {item.get('dc', '')}").classes('mt-0 mb-0')
+                    with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                        ui.label(item.get('camp', '')).style('width: 18rem; flex-shrink: 0; white-space: normal; word-wrap: break-word; padding-left: 1em; text-indent: -1em;')
+                        ui.label(item.get('dc', '')).style('width: 10rem; flex-shrink: 0; text-align: center;')
 
+        # Weather Modifiers table
         weather_mods = rest_info.get('weather_modifiers', [])
         if weather_mods:
-            ui.label('Weather Modifiers').classes('font-bold mt-0 mb-0 ml-4')
-            with ui.column().classes('mt-0 mb-0 ml-8'):
+            ui.label('Weather Modifiers').classes('text-lg font-bold mt-2 mb-0')
+            with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
+                with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                    ui.label('Condition').classes('font-bold').style('width: 18rem; flex-shrink: 0;')
+                    ui.label('Modifier').classes('font-bold').style('width: 10rem; flex-shrink: 0; text-align: center;')
                 for mod in weather_mods:
-                    mod_text = f"{mod.get('description', '')}  {mod.get('modifier', '')}"
-                    ui.html(f'<span class="emphasis">{mod_text}</span>', sanitize=False).classes('mt-0 mb-0')
+                    with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                        ui.label(mod.get('description', '')).style('width: 18rem; flex-shrink: 0; white-space: normal; word-wrap: break-word; padding-left: 1em; text-indent: -1em;')
+                        ui.html(f'<span class="emphasis">{mod.get("modifier", "")}</span>', sanitize=False).style('width: 10rem; flex-shrink: 0; text-align: center;')
 
-        ui.label('Situational Modifiers').classes('font-bold mt-0 mb-0 ml-4')
+        # Situational Modifiers table
+        ui.label('Situational Modifiers').classes('text-lg font-bold mt-2 mb-0')
         situational_mods = rest_info.get('situational_modifiers', [])
         if situational_mods:
-            with ui.column().classes('mt-0 mb-0 ml-8'):
+            with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
+                with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                    ui.label('Situation').classes('font-bold').style('width: 18rem; flex-shrink: 0;')
+                    ui.label('Modifier').classes('font-bold').style('width: 10rem; flex-shrink: 0; text-align: center;')
                 for mod in situational_mods:
-                    ui.label(f"{mod.get('situation', '')}  {mod.get('modifier', '')}").classes('mt-0 mb-0')
+                    with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                        ui.label(mod.get('situation', '')).style('width: 18rem; flex-shrink: 0; white-space: normal; word-wrap: break-word; padding-left: 1em; text-indent: -1em;')
+                        ui.label(mod.get('modifier', '')).style('width: 10rem; flex-shrink: 0; text-align: center;')
     else:
         ui.label('No rest information generated yet').classes('mt-0 mb-0 ml-4 text-gray-500')
 
@@ -774,10 +940,10 @@ def site_probability_content():
     # Sort descending, display
     if total > 0:
         sorted_encs = sorted(weights.items(), key=lambda x: x[1], reverse=True)
-        with ui.column().classes('mt-0 mb-0 ml-4'):
+        with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
             for name, w in sorted_encs:
                 pct = w / total * 100
-                ui.label(f'{name}: {pct:.1f}%').classes('mt-0 mb-0')
+                ui.label(f'\u2022 {name}: {pct:.1f}%').classes('mt-0 mb-0').style('line-height: 1.4')
     else:
         ui.label('No encounters available for this zone').classes('mt-0 mb-0 ml-4 text-gray-500')
 
@@ -786,48 +952,23 @@ def site_probability_content():
 def overland_probability_content():
     """Refreshable Overland probability distribution tab content."""
 
-    def handle_zone_change(e):
-        config.selected_overland_zone = e.value
-        global_header.refresh()
-        overland_probability_content.refresh()
-        overland_content.refresh()
-
-    def handle_overlay_change(e):
-        config.selected_overland_overlay = None if e.value == "None" else e.value
-        global_header.refresh()
-        overland_probability_content.refresh()
-        overland_content.refresh()
-
     def handle_watch_change(e):
         config.selected_overland_watch = e.value
         overland_probability_content.refresh()
 
-    # Dropdowns synced with header — zone, overlay from config globals + local watch; season displayed as text
+    # Zone, overlay, season shown as text labels; only Watch is a dropdown
+    overlay_text = f' + {config.selected_overland_overlay}' if config.selected_overland_overlay else ''
     with ui.row().classes('w-full gap-2 mt-1 mb-1 items-center'):
-        ui.select(
-            options=config.overland_zones_list,
-            value=config.selected_overland_zone,
-            label='Zone',
-            on_change=handle_zone_change
-        ).classes('flex-1')
-
-        overlay_options = ["None"] + config.overland_overlay_list
-        current_overlay = "None" if config.selected_overland_overlay is None else config.selected_overland_overlay
-        ui.select(
-            options=overlay_options,
-            value=current_overlay,
-            label='Overlay',
-            on_change=handle_overlay_change
-        ).classes('flex-1')
-
         ui.select(
             options=config.watches_list,
             value=config.selected_overland_watch,
             label='Watch',
             on_change=handle_watch_change
         ).classes('flex-1')
-
-        ui.label(config.selected_overland_season).classes('mt-0 mb-0')
+        ui.label('|').classes('mt-0 mb-0')
+        ui.label(f'Season: {config.selected_overland_season}').classes('mt-0 mb-0')
+        ui.label('|').classes('mt-0 mb-0')
+        ui.label(f'Zone: {config.selected_overland_zone}{overlay_text}').classes('mt-0 mb-0')
 
     zone = config.selected_overland_zone
     overlay = config.selected_overland_overlay
@@ -853,10 +994,10 @@ def overland_probability_content():
 
         if total > 0:
             sorted_encs = sorted(weights.items(), key=lambda x: x[1], reverse=True)
-            with ui.column().classes('mt-0 mb-0 ml-4'):
+            with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
                 for name, w in sorted_encs:
                     pct = w / total * 100
-                    ui.label(f'{name}: {pct:.1f}%').classes('mt-0 mb-0')
+                    ui.label(f'\u2022 {name}: {pct:.1f}%').classes('mt-0 mb-0').style('line-height: 1.4')
         else:
             ui.label('No encounters available for this combination').classes('mt-0 mb-0 ml-4 text-gray-500')
     else:
@@ -896,11 +1037,28 @@ def overland_probability_content():
                     blended_probs[enc] = blended_p * 100
 
             sorted_encs = sorted(blended_probs.items(), key=lambda x: x[1], reverse=True)
-            with ui.column().classes('mt-0 mb-0 ml-4'):
+            with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
                 for name, pct in sorted_encs:
-                    ui.label(f'{name}: {pct:.1f}%').classes('mt-0 mb-0')
+                    ui.label(f'\u2022 {name}: {pct:.1f}%').classes('mt-0 mb-0').style('line-height: 1.4')
         else:
             ui.label('No encounters available for this combination').classes('mt-0 mb-0 ml-4 text-gray-500')
+
+
+@ui.refreshable
+def forage_content():
+    """Refreshable Forage tab content."""
+
+    overlay_text = f' + {config.selected_overland_overlay}' if config.selected_overland_overlay else ''
+    ui.label(f'Season: {config.selected_overland_season} | Zone: {config.selected_overland_zone}{overlay_text}').classes('mt-0 mb-1')
+
+    def handle_generate_forage():
+        generate_forage_encounter()
+        forage_content.refresh()
+
+    ui.button('Generate Forage', on_click=handle_generate_forage)
+
+    if config.generated_forage_encounter is not None:
+        render_encounter(config.generated_forage_encounter, "Forage", "overland", forage_content, show_regen=False, default_expanded=True)
 
 
 def toggle_timer_form():
@@ -1070,9 +1228,10 @@ def index():
     # Persistent global header above tabs
     global_header()
 
-    # 8 tabs
+    # 9 tabs
     with ui.tabs().classes('w-full') as tabs:
-        overland_tab = ui.tab('Overland Travel')
+        overland_travel_tab = ui.tab('Overland Travel')
+        overland_enc_tab = ui.tab('Overland Encounters')
         forage_tab = ui.tab('Forage')
         resting_tab = ui.tab('Resting')
         site_tab = ui.tab('Site Exploration')
@@ -1081,12 +1240,15 @@ def index():
         overland_prob_tab = ui.tab('Overland Enc. Prob.')
         site_prob_tab = ui.tab('Site Enc. Prob.')
 
-    with ui.tab_panels(tabs, value=overland_tab).classes('w-full'):
-        with ui.tab_panel(overland_tab):
+    with ui.tab_panels(tabs, value=overland_travel_tab).classes('w-full'):
+        with ui.tab_panel(overland_travel_tab):
+            overland_travel_content()
+
+        with ui.tab_panel(overland_enc_tab):
             overland_content()
 
         with ui.tab_panel(forage_tab):
-            ui.label('Coming soon').classes('text-gray-500')
+            forage_content()
 
         with ui.tab_panel(resting_tab):
             resting_content()

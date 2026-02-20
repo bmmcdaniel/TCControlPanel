@@ -237,6 +237,95 @@ class Encounter:
             self.habitat_notes = None
             self.seasons = "Any"
 
+    def generate_forage_encounter(
+        self,
+        zone: str,
+        overlay: Optional[str],
+        season: str,
+        encounters_data: Dict,
+        encounter_by_zone_watch_and_season: xr.DataArray,
+        zones_data: Dict,
+        seasons_data: Dict
+    ) -> None:
+        """
+        Generate a forage encounter (no watch dimension, always produces a result).
+
+        Algorithm:
+        1. Determine active zone (50% chance overlay if provided)
+        2. Sum weights across all watches for zone+season, filter to Forage type
+        3. Weighted random selection from filtered weights (no encounter chance roll)
+
+        Args:
+            zone: Base overland zone
+            overlay: Overlay zone or None
+            season: Current season name
+            encounters_data: Dictionary of encounter details
+            encounter_by_zone_watch_and_season: 4D xarray [Encounter, Zone, Watch, Season]
+            zones_data: Dictionary of zone information
+            seasons_data: Dictionary of season information
+        """
+        from utils import weighted_random_choice, verbose_print
+        from logger import log_info
+
+        # Step 1: Determine active zone (50/50 if overlay present)
+        active_zone = zone
+        if overlay is not None:
+            if random.random() < 0.5:
+                active_zone = overlay
+                verbose_print(f"  Forage using overlay zone: {overlay}")
+            else:
+                verbose_print(f"  Forage using base zone: {zone}")
+
+        # Step 2-3: Sum across watches, filter to Forage, select
+        try:
+            weights = {}
+            for encounter_name in encounter_by_zone_watch_and_season.coords['Encounter'].values:
+                # Only consider Forage-type encounters
+                if encounters_data.get(encounter_name, {}).get('type') != 'Forage':
+                    continue
+                # Sum weight across all watches for this zone+season
+                total_weight = float(
+                    encounter_by_zone_watch_and_season.loc[encounter_name, active_zone, :, season].sum()
+                )
+                if total_weight > 0:
+                    weights[encounter_name] = total_weight
+
+            if not weights:
+                self.name = None
+                self.time = None
+                self.sparks = []
+                self.description = None
+                self.habitat = None
+                self.habitat_notes = None
+                self.seasons = "Any"
+                log_info(f"Forage: No valid forage encounters for {active_zone}/{season}")
+                return
+
+            selected_encounter = weighted_random_choice(weights)
+
+            encounter_details = encounters_data[selected_encounter]
+            self.name = selected_encounter
+            self.time = "Forage"
+            self.sparks = encounter_details['sparks']
+            self.description = encounter_details['description']
+            self.habitat = encounter_details['habitat']
+            self.habitat_notes = encounter_details.get('habitat_notes')
+            self.seasons = encounter_details.get('season', {})
+
+            log_info(f"Forage: {selected_encounter} (zone: {active_zone}, season: {season}, weight: {weights[selected_encounter]:.2f})")
+            verbose_print(f"  Forage result: {selected_encounter}")
+
+        except Exception as e:
+            log_info(f"Error generating forage encounter: {e}")
+            verbose_print(f"  Forage error: {e}")
+            self.name = None
+            self.time = None
+            self.sparks = []
+            self.description = None
+            self.habitat = None
+            self.habitat_notes = None
+            self.seasons = "Any"
+
     def is_encounter(self) -> bool:
         """
         Check if this represents an actual encounter or 'no encounter'.
