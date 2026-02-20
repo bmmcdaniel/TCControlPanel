@@ -1,7 +1,7 @@
 # Torchcrawl GM Control Panel - Complete Specification
 
-**Version:** 2.3 (NiceGUI + Calendar + Moon Phases + Seasonal Encounters)
-**Date:** February 12, 2026
+**Version:** 3.0 (NiceGUI + Header + Popup Dialogs + 8 Tabs)
+**Date:** February 19, 2026
 **Framework:** NiceGUI 1.4+
 **Language:** Python 3.9+
 
@@ -28,11 +28,14 @@
 A game master control panel for the Torchcrawl tabletop RPG system that generates and manages encounters, weather, timers, and rest checks for both overland travel and site-based exploration.
 
 ### 1.2 Key Features
+- **Persistent Header:** Global header above tabs with date, moon, weather, days out — each clickable to open popup dialogs
+- **Popup Dialogs:** Calendar date picker, moon phase selector, weather selector, days-out reset confirmation
+- **8 Tabs:** Overland Travel, Forage, Resting, Site Exploration, Settlements, Creatures, Overland Enc. Prob., Site Enc. Prob.
 - **Overland Mode:** Day-by-day travel with weather, season-weighted encounters, and rest checks
 - **Site Mode:** 10-minute turn tracking with encounters (current + 5 future slots) and timers
 - **Calendar System:** Optional fantasy calendar with date tracking, holidays, auto-season detection, and moon phases
 - **Data-Driven:** All encounters, weather, zones, seasons, and watches loaded from YAML/Excel files
-- **Persistent State:** Expansion states preserved when encounters shift
+- **Persistent State:** Expansion states preserved for both overland and site encounters
 - **Responsive UI:** Ultra-compact spacing, dark mode, emphasis colors
 
 ### 1.3 User Experience Goals
@@ -81,8 +84,8 @@ app.py                 ← Main UI + Routing
 - Loaded data (YAML, Excel)
 
 **Session State (app.storage.user):**
-- Expansion states (site encounters)
-- UI preferences
+- Expansion states: `overland_expansions` dict and `site_expansions` dict
+- UI preferences (e.g., `show_timer_form`)
 
 **Component State:**
 - Visibility toggles (expansion)
@@ -169,22 +172,28 @@ class Timer:
 ### 4.1 Global Layout
 
 ```
-┌──────────────────────────────────────────┐
-│  Torchcrawl GM Control Panel             │  ← Header (h2)
-├──────────────────────────────────────────┤
-│  [Overland]  [Site]  [Calendar]          │  ← Tabs (left-aligned, Calendar conditional)
-├──────────────────────────────────────────┤
-│                                          │
-│  Tab Content                             │  ← Scrollable content area
-│  (Overland, Site, or Calendar)           │
-│                                          │
-└──────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  Torchcrawl GM Control Panel                                     │  ← Title (h1, gothic font)
+├──────────────────────────────────────────────────────────────────┤
+│  Header (persistent above tabs, @ui.refreshable)                 │
+│  Row 1: [New Day] | Date (click→calendar) | Moon (click→moon)   │
+│          | Weather name (click→weather) | Days Out (click→reset) │
+│  Row 2: Holiday info (conditional, only on holidays)             │
+│  Row 3: [Overland Zone ▼] [Overlay Zone ▼] [Season ▼]          │
+│          (Season hidden when calendar drives season)             │
+│  ─── separator ───                                               │
+├──────────────────────────────────────────────────────────────────┤
+│  [Overland Travel] [Forage] [Resting] [Site Exploration]         │
+│  [Settlements] [Creatures] [Overland Enc. Prob.] [Site Enc. Prob]│
+├──────────────────────────────────────────────────────────────────┤
+│  Tab Content                                                     │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-**Conditional Tabs:**
-- Overland: Always visible
-- Site: Always visible
-- Calendar: Only visible when a calendar file is loaded
+**Tabs (8 total):**
+- Overland Travel, Forage, Resting, Site Exploration, Settlements, Creatures, Overland Enc. Prob., Site Enc. Prob.
+- 4 placeholder tabs (Forage, Settlements, Creatures) show "Coming soon"
+- All tabs left-aligned, normal case
 
 ### 4.2 Colors
 
@@ -249,98 +258,52 @@ dark.auto()  # Follow system preference
 
 ## 5. UI Specification (Detailed)
 
-### 5.1 Overland Tab
+### 5.1 Overland Travel Tab
 
-#### 5.1.1 Configuration Section
+The Overland Travel tab contains weather display with effects and the encounters section. Configuration (zone, overlay, season, date, days out) has moved to the persistent Header (see Section 5.6).
 
-**Layout (with calendar date set):**
-```
-┌─────────────────────────────────┐
-│ Current Date: Deepwinter 15 (Winter)  🌒 Waxing Crescent        │
-│ Zone: [Dropdown ▼] Overlay: [Dropdown ▼]                        │
-│ [Generate] [Reset] [New Day]                                     │
-└─────────────────────────────────┘
-```
-
-**Layout (without calendar or no date set):**
-```
-┌─────────────────────────────────┐
-│ Zone: [Dropdown ▼] Overlay: [Dropdown ▼] Season: [Dropdown ▼]  │
-│ [Generate] [Reset]                                               │
-└─────────────────────────────────┘
-```
-
-**Elements:**
-- Date display: Only shown when calendar has current_date set
-  - Month name emphasized in coral pink
-  - Format: `<span class="emphasis">{month}</span> {day} ({season})`
-- Moon phase display: Only shown when calendar has lunar_day set
-  - Shows unicode moon icon + phase name
-  - Format: `🌒 Waxing Crescent` (or `🌕 Full Moon`, etc.)
-  - Blood Moon: Icon uses layered CSS technique (grayscale + red overlay), text in red
-- Zone dropdown: Required, no default
-- Overlay dropdown: Optional, "None" default
-- Season dropdown: Conditional
-  - Shown when no calendar or no current_date set
-  - Hidden when calendar date is set (season auto-detected from month)
-- Generate button: Triggers `overland_generate()`
-- Reset button: Triggers `overland_reset()`
-- New Day button: Only shown when calendar date is set
-  - Advances calendar by 1 day
-  - Triggers `advance_calendar_date(1)` then regenerates
-
-**Styling:**
-- Row: `gap-2` (small spacing between dropdowns)
-- Buttons: `mt-1` (small top margin)
-
----
-
-#### 5.1.2 General Section
+#### 5.1.1 Weather Display
 
 **Structure:**
 ```
-General
-    3 days
-    Weather: Clear Skies (Bright sunlight) 🔄
-             ^^^^^^^^^^^
-             emphasized
+Weather: Clear Skies (Bright sunlight) 🔄
+         ^^^^^^^^^^^
+         emphasized
 ```
 
 **Layout:**
 ```
-ui.label('General')              # Section header
-    ui.label('X days')           # Indented (ml-4)
-    ui.row:                      # Weather row (ml-4)
-        ui.html('Weather: ...')  # With emphasis
-        ui.button('🔄')          # Regenerate
+ui.row:                          # Weather row
+    ui.html('Weather: ...')      # With emphasis on name
+    ui.button('🔄')              # Opens weather popup dialog
 ```
 
-**Weather Format:**
-- Parse string to find name vs effects
-- Emphasize only name part (before parentheses)
-- Button on same line, flush left after weather
-
-**Spacing:**
-- Section header: `mt-0 mb-0`
-- Days: `mt-0 mb-0 ml-4`
-- Weather row: `mt-0 mb-0 ml-4 gap-0`
+- Weather name emphasized (before parentheses), effects not emphasized
+- 🔄 button opens the weather popup dialog (see Section 5.9)
 
 ---
 
-#### 5.1.3 Encounters Section
+#### 5.1.2 Encounters Section
 
 **Structure:**
 ```
-Encounters
+Encounters 🔄               ← regenerate button on section header
     Dawn: Ankheg 🔄
           ^^^^^^
           emphasized (coral pink)
         Description: 12-foot tall mantis...
         1. The adventuring company...
         2. An ankheg is digging...
-    
+
     Morning: No Encounter 🔄
              (not emphasized)
+```
+
+**Layout:**
+```
+ui.row (gap-0):                          # Section header + regenerate button
+    ui.label('Encounters')               # Bold section header
+    ui.button('🔄')                      # Regenerate all encounters
 ```
 
 **Layout per Encounter:**
@@ -349,7 +312,7 @@ ui.row (ml-4):                           # Indentation
     ui.column (gap-0):                   # Outer container
         ui.row (gap-0):                  # Name + button row
             ui.html (clickable)          # Encounter name
-            ui.button('🔄')              # Regenerate
+            ui.button('🔄')              # Regenerate individual
         ui.column (gap-0):               # Details container
             ui.html                      # Description
             ui.html (loop)               # Sparks
@@ -364,7 +327,7 @@ ui.row (ml-4):                           # Indentation
 - Click name to toggle details
 - Details container initially hidden
 - No expansion icon visible
-- Overland: State not preserved (always starts collapsed)
+- Expansion states persisted in `app.storage.user['overland_expansions']`
 
 **Details Format:**
 ```html
@@ -395,7 +358,9 @@ Watch periods are not hardcoded. They are read from the watches YAML file at sta
 
 ---
 
-#### 5.1.4 Rest Check Section
+### 5.2 Resting Tab
+
+A `@ui.refreshable` called `resting_content()`. Refreshed on New Day, weather change, and zone/season/overlay change.
 
 **Structure:**
 ```
@@ -434,44 +399,27 @@ ui.label('Rest Check')                    # Section header
 
 ---
 
-### 5.2 Site Tab
+### 5.3 Site Exploration Tab
 
-#### 5.2.1 Configuration Section
+#### 5.3.1 Configuration & Controls
 
 **Layout:**
 ```
 ┌─────────────────────────────────┐
-│ Zone: [Dropdown ▼]              │
-│ [Generate] [Reset]               │
+│ Site Zone: [Dropdown ▼]         │
+│ [New Turn] [Regenerate All] [Reset] │
 └─────────────────────────────────┘
 ```
 
 **Elements:**
-- Zone dropdown: Required, no default
-- Generate button: Triggers `site_generate()`
-- Reset button: Triggers `site_reset()`
-
----
-
-#### 5.2.2 Controls Section
-
-**Layout:**
-```
-┌─────────────────────────────────┐
-│ [New Turn] [Regenerate All]     │
-└─────────────────────────────────┘
-```
-
-**Buttons:**
+- Site Zone dropdown: Required, has its own zone selection independent of Header
 - New Turn: Advances time by 10 minutes, shifts encounters, decrements timers
 - Regenerate All: Regenerates current encounter only
-
-**Behavior:**
-- Both trigger `site_content.refresh()`
+- Reset: Clears all site state
 
 ---
 
-#### 5.2.3 General Section
+#### 5.3.3 General Section
 
 **Structure:**
 ```
@@ -498,7 +446,7 @@ ui.label('General')                       # Section header
 
 ---
 
-#### 5.2.4 Timers Section
+#### 5.3.4 Timers Section
 
 **Structure (form collapsed):**
 ```
@@ -565,7 +513,7 @@ ui.column (ml-4):                        # Timer list
 
 ---
 
-#### 5.2.5 Encounters Section
+#### 5.3.5 Encounters Section
 
 **Structure:**
 ```
@@ -587,7 +535,7 @@ Encounters
 **Differences from Overland:**
 - **Emphasis:** Only "Current" encounter names emphasized
 - **Slots:** 6 total (Current, 10, 20, 30, 40, 50 minutes)
-- **Persistence:** Expansion states preserved when encounters shift
+- **Persistence:** Expansion states preserved when encounters shift (same dict-based approach as overland)
 
 **Expansion State Persistence:**
 - Stored in `app.storage.user['site_expansions']`
@@ -607,59 +555,113 @@ Encounters
 
 ---
 
-### 5.3 Calendar Tab
-
-**Conditional Display:** Only visible when a calendar file is loaded (configured in Default Data Files.yaml)
-
-#### 5.3.1 Calendar Header
-
-**Structure:**
-```
-Calendar: Torchcrawl Standard Calendar
-A simple 10-month fantasy calendar with 300 days per year
-
-Current Date: Deepwinter 15 (Winter)  🌒 Waxing Crescent
-              ^^^^^^^^^^
-              emphasized (coral pink)
-
-Lunar Phase: [-] 🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘 [+]
-```
+### 5.4 Overland Encounter Probability Tab
 
 **Layout:**
 ```
-ui.label(calendar_name)              # Calendar name (bold)
-ui.label(description)                # Calendar description
-ui.html(date_string)                 # Current date with emphasis + moon phase
+Zone: [Dropdown ▼] Overlay: [Dropdown ▼] Watch: [Dropdown ▼] Season (text label)
+Encounter chance: X.XX%
+──────────────────────
+Encounter1: XX.X%
+Encounter2: XX.X%
+...
 ```
 
-**Date Display Modes:**
-- **Date set:** `<span class="emphasis">{month}</span> {day} ({season})  {moon_icon} {phase_name}`
-- **No date set:** "No date set - set date via calendar below"
-- **Blood Moon:** Moon icon uses CSS filter, "Blood Moon" text in red
+- Zone and overlay dropdowns are synced with the Header; changes here also refresh the Header
+- Season is displayed as a text label (not a dropdown) — it follows the Header's season
+- Watch dropdown is local to this tab
+- When overlay is set, shows blended probability (50/50 base zone + overlay)
 
-#### 5.3.2 Lunar Phase Selector
+---
 
-**Structure:**
+### 5.5 Site Encounter Probability Tab
+
+- Zone dropdown synced with the Site Exploration tab's zone
+- Shows encounter chance and probability list from the 2D encounter array
+- No season/watch dimensions (site encounters are not season- or watch-dependent)
+
+---
+
+### 5.6 Persistent Header
+
+The Header is a `@ui.refreshable` called `global_header()` that renders above all tabs. It contains all overland configuration that was formerly in the Overland tab.
+
+#### 5.6.1 Row 1: Status Bar
+
 ```
-Lunar Phase: [-] 🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘 [+]
+[New Day] | Deepwinter 15 (Winter) | 🌒 Waxing Crescent | Weather: Clear Skies | 3 days
 ```
 
-**Layout:**
+**Elements (left to right):**
+- **New Day button:** Advances calendar by 1 day, advances lunar day, regenerates overland (weather + encounters + rest info). Resets overland expansion states.
+- **Date** (clickable): Opens calendar popup dialog. Shows `<span class="emphasis">{month}</span> {day} ({season})`. Only shown when calendar is loaded.
+- **Moon phase** (clickable): Opens moon phase popup dialog. Shows icon + phase name. Blood Moon uses layered CSS technique with red text.
+- **Weather name** (clickable): Opens weather popup dialog. Shows `Weather: <span class="emphasis">{name}</span>` (name only, no effects). Shows "No weather generated yet" if none.
+- **Days Out** (clickable): Opens confirmation dialog asking before resetting. Shows `{days} days`.
+
+#### 5.6.2 Row 2: Holiday Info (Conditional)
+
+Only displayed when current calendar date falls on a holiday. Shows holiday name and description in a single text-sm line.
+
+#### 5.6.3 Row 3: Zone/Overlay/Season Dropdowns
+
 ```
-ui.row:
-    ui.label("Lunar Phase:")
-    ui.button("−")                   # Decrease lunar_day
-    for phase in phases:
-        ui.button(phase_icon)        # Set to this phase
-    ui.button("+")                   # Increase lunar_day
+[Overland Zone ▼] [Overlay Zone ▼] [Season ▼]
 ```
 
-**Behavior:**
-- **Phase icon buttons:** Click to set lunar_day to the start of that phase
-- **[-] button:** Decrease lunar_day by 1 (wraps from 1 to lunar_cycle_length)
-- **[+] button:** Increase lunar_day by 1 (wraps from lunar_cycle_length to 1)
-- Changes are saved to calendar file immediately
-- If setting to full moon phase, blood moon is rolled
+- **Overland Zone:** Required, populated from zones with type "Overland"
+- **Overlay Zone:** Optional, "None" default, populated from zones with type "Overlay"
+- **Season:** Conditional — hidden when calendar date is set (season auto-detected from month). Shown when no calendar or no date set.
+- Changes to any dropdown refresh the Header, overland content, resting content, and overland probability content.
+
+**Important NiceGUI pattern:** Dropdown change handlers MUST use the `on_change=` parameter in the `ui.select()` constructor, NOT `.on('change')`, to avoid spurious change events when refreshables recreate the dropdown.
+
+#### 5.6.4 Separator
+
+A `ui.separator()` below the dropdowns separates the Header from tab content.
+
+---
+
+### 5.7 Calendar Popup Dialog
+
+Opened by clicking the date display in the Header. Implemented as `open_calendar_dialog()` → `calendar_dialog_content(dialog)`.
+
+**Contents:**
+1. Current date display (bold, with emphasis on month name)
+2. Current holiday info (if applicable) — name emphasized, description below
+3. Separator
+4. Month grids: One grid per month with day buttons
+   - Season-change separators between months when season changes (not before every month)
+   - Day buttons: flat dense, clickable to set current date
+   - Current date highlighted with coral pink text + bold (`calendar-day-current`)
+   - Holiday days shown with amber background (`calendar-day-holiday`) and tooltip
+   - Grid columns from `days_per_week`
+5. Separator
+6. Holiday list: All holidays listed, clickable to jump to that date
+   - Current holiday emphasized
+   - Non-current holidays have tooltip with description
+7. Close button
+
+**On day/holiday click:** Saves date, updates season if changed, closes dialog, refreshes Header + overland content.
+
+**Note:** No moon phase selector in calendar popup (moon has its own popup).
+
+---
+
+### 5.8 Moon Popup Dialog
+
+Opened by clicking the moon phase display in the Header. Implemented as `open_moon_dialog()` → `moon_dialog_content(dialog)`.
+
+**Contents:**
+1. Current phase display (icon + name, large bold text). Blood moon uses red styling.
+2. Separator
+3. Lunar phase selector row: `[-] 🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘 [+]`
+   - Phase icon buttons: Click to set lunar_day to the start of that phase
+   - Current phase highlighted with coral pink border/background
+   - [-] / [+] buttons: Decrease/increase lunar_day by 1 (wraps)
+4. Close button
+
+**On phase change:** Saves to calendar file, closes dialog, refreshes Header + overland content, reopens moon dialog (to show updated state).
 
 **Phase Icons:**
 | Phase | Icon | Days (27-day cycle) |
@@ -677,114 +679,43 @@ ui.row:
 - Uses layered CSS technique for red-tinted moon icon
 - Text "Blood Moon" displayed in red (#cc2222)
 
-**Blood Moon CSS (layered technique):**
-```css
-.blood-moon {
-  position: relative;
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  filter: contrast(1.4);
-}
+---
 
-/* Bottom layer: desaturated moon */
-.blood-moon::before {
-  content: "🌕";
-  position: absolute;
-  top: 0;
-  left: 0;
-  filter: grayscale(0.95);
-  z-index: 1;
-}
+### 5.9 Weather Popup Dialog
 
-/* Top layer: red tint overlay */
-.blood-moon::after {
-  content: "🌕";
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
-  background-color: rgba(255, 0, 0, 0.5);
-  pointer-events: none;
-}
-```
+Opened by clicking the weather display in the Header. Implemented as `open_weather_dialog()` → `weather_dialog_content(dialog)`.
 
-#### 5.3.3 Holiday Display
+**Contents:**
+1. Current weather display (name emphasized, with effects)
+2. Regenerate button — regenerates weather randomly, closes dialog, refreshes Header + overland + resting
+3. Separator
+4. List of valid weathers for current season:
+   - Shows weathers with probability > 0, excluding "No Change"
+   - Sorted by probability descending
+   - Format: `{name}{effects} — {percent}%`
+   - Current weather emphasized
+   - All entries clickable to set weather directly
+5. Close button
 
-**Structure (when current date is a holiday):**
-```
-🎉 Today is Midwinter Festival
-   A week-long celebration marking the darkest point of winter...
-```
+**On weather click:** Sets weather to selected entry, calls `generate_overland_rest_info()`, closes dialog, refreshes Header + overland + resting.
 
-**Layout:**
-```
-if get_current_holiday():
-    ui.label(f"🎉 Today is {holiday['name']}")    # Bold
-    ui.label(holiday['description'], ml-4)         # Indented
-```
+---
 
-#### 5.3.4 Month Grid
+### 5.10 Days Out Confirmation Dialog
 
-**Structure:**
-```
-── Deepwinter (Winter) ──────────────────
-   [ 1] [ 2] [ 3] [ 4] [ 5] [ 6]
-   [ 7] [ 8] [ 9] [10] [11] [12]
-   [13] [14] [15] [16] [17] [18]    ← 15 highlighted if current
-   [19] [20] [21] [22] [23] [24]
-   [25] [26] [27] [28] [29] [30]
+Opened by clicking the days display in the Header.
 
-── Latewinter (Winter) ──────────────────
-   [ 1] [ 2] [ 3] [ 4] [ 5] [ 6]
-   ...
-```
+**Contents:**
+1. Confirmation message: "Reset overland state? ({days} days, weather, encounters)"
+2. Cancel button and Reset button (red/negative color)
 
-**Layout per month:**
-```
-ui.separator                              # Visual divider
-ui.label(f"{month_name} ({season})")      # Month header (bold)
-ui.grid(columns=days_per_week):           # Grid with configured columns
-    for day in range(1, days+1):
-        ui.button(str(day))               # Clickable day button
-```
+**On confirm:** Resets overland expansion states, calls `overland_reset()`, refreshes Header + overland content.
 
-**Day Button Behavior:**
-- Click any day to set current date to that month/day
-- Calls `save_calendar_date(month_index, day)`
-- Refreshes calendar display
+---
 
-**Day Button Styling:**
-- **Normal days:** Default button style
-- **Current date:** Highlighted with coral pink background
-- **Holiday days:** Could be indicated with different styling (optional)
+### 5.11 CSS Styling
 
-**Grid Configuration:**
-- Columns determined by `calendar_data['days_per_week']` (default 6)
-- Rows automatically calculated based on days in month
-
-#### 5.3.5 Calendar Data Requirements
-
-**Required fields in calendar YAML:**
-- `name`: Calendar display name
-- `description`: Calendar description
-- `days_per_week`: Number of days per week (for grid columns)
-- `current_date`: Object with `month` (1-based) and `day`, or null
-- `months`: List of month objects with `name`, `days`, `season`
-- `holidays`: List of holiday objects with `name`, `description`, `month` (name), `day`
-
-**Lunar phase fields (optional):**
-- `lunar_cycle_length`: Days in lunar cycle (e.g., 27)
-- `blood_moon_chance`: Percent chance of blood moon on full moon (e.g., 10)
-- `lunar_day`: Current position in cycle (1 to lunar_cycle_length), or null
-- `is_blood_moon`: Whether current full moon is a blood moon (true/false)
-
-### 5.4 CSS Styling
-
-#### 5.3.1 Global CSS
+#### 5.11.1 Global CSS
 
 ```css
 /* Emphasis color */
@@ -853,7 +784,7 @@ p, div {
 }
 ```
 
-#### 5.3.2 Inline Styles
+#### 5.11.2 Inline Styles
 
 **Used for maximum specificity on containers:**
 
@@ -1055,15 +986,17 @@ config.generated_site_timers = [
 - ✅ 4D encounter probability array [Encounter, Zone, Watch, Season] precomputed at startup
 
 **Regeneration:**
-- ✅ Individual weather regeneration
+- ✅ Individual weather regeneration (via weather popup)
 - ✅ Individual encounter regeneration
-- ✅ Full reset
+- ✅ Regenerate all encounters button on section header
+- ✅ Full reset (via days out confirmation dialog)
 
 **Display:**
 - ✅ Expandable encounters (click name)
+- ✅ Expansion states persisted in `overland_expansions` dict
 - ✅ Emphasized encounter names
 - ✅ Emphasized weather names
-- ✅ Emphasized weather modifiers in Rest Check
+- ✅ Emphasized weather modifiers in Resting tab
 - ✅ Clear hierarchical layout
 
 ---
@@ -1103,22 +1036,28 @@ config.generated_site_timers = [
 
 ---
 
-### 7.3 Calendar Features
+### 7.3 Calendar & Moon Features
 
 **Operating Modes:**
 - ✅ No calendar (no calendar_file configured)
 - ✅ Calendar without date (calendar loaded, current_date: null)
 - ✅ Calendar with date (calendar loaded, current_date set)
 
-**Calendar Tab:**
-- ✅ Calendar name and description display
+**Calendar Popup Dialog:**
 - ✅ Current date display with month emphasis
 - ✅ Holiday display for current date
 - ✅ Visual month grid with clickable days
+- ✅ Season-change separators between months when season changes
 - ✅ Grid columns based on days_per_week
 - ✅ Click day to set current date
-- ✅ Current date highlighted in grid
+- ✅ Current date highlighted in grid (coral pink text)
+- ✅ Holiday days highlighted with amber background and tooltip
+- ✅ Holiday list with clickable entries to jump to date
+
+**Moon Popup Dialog:**
+- ✅ Current phase display with icon and name
 - ✅ Lunar phase selector with [-] icons [+] buttons
+- ✅ Current phase highlighted with coral pink border
 
 **Moon Phase System:**
 - ✅ 8 phases: New Moon, Waxing Crescent, First Quarter, Waxing Gibbous, Full Moon, Waning Gibbous, Last Quarter, Waning Crescent
@@ -1131,12 +1070,21 @@ config.generated_site_timers = [
 - ✅ Blood moon icon with red CSS filter
 - ✅ Manual lunar phase adjustment via selector
 
-**Overland Integration:**
-- ✅ Date display when calendar date set
-- ✅ Moon phase display next to date
+**Weather Popup Dialog:**
+- ✅ Current weather display with emphasis
+- ✅ Regenerate button
+- ✅ Valid weathers for current season with probabilities
+- ✅ Click any weather to set directly
+- ✅ Also regenerates rest info on manual selection
+
+**Header Integration:**
+- ✅ Date display clickable to open calendar popup
+- ✅ Moon phase clickable to open moon popup
+- ✅ Weather clickable to open weather popup
+- ✅ Days out clickable to open reset confirmation
 - ✅ Auto-season detection from current month
 - ✅ Conditional Season dropdown (hidden when auto-detected)
-- ✅ New Day button to advance calendar and lunar day
+- ✅ New Day button advances calendar, lunar day, and regenerates
 
 **Data Persistence:**
 - ✅ Current date saved to calendar YAML file
@@ -1156,6 +1104,8 @@ config.generated_site_timers = [
 - ✅ Flush-left button alignment
 - ✅ No gaps between encounter names and details
 - ✅ Clickable encounter names (no separate expand icon)
+- ✅ Persistent Header with clickable popup dialogs
+- ✅ 8 tabs (4 active, 4 placeholder)
 
 **Data:**
 - ✅ YAML for encounters, weather, zones, seasons, watches, rest info
@@ -1227,7 +1177,7 @@ pandas>=2.0.0
 
 ```
 torchcrawl_nicegui/
-├── app.py                          # Main application (376 lines)
+├── app.py                          # Main application
 ├── config.py                       # Global configuration
 ├── models.py                       # Data classes (372 lines)
 ├── data_loader.py                  # YAML/Excel loading
@@ -1257,8 +1207,10 @@ torchcrawl_nicegui/
 
 **app.py:**
 - NiceGUI application setup
-- UI rendering (tabs, sections, components)
-- Event handlers (button clicks, toggles)
+- Persistent Header (`global_header` refreshable)
+- Popup dialog functions (calendar, moon, weather, days out)
+- Tab content refreshables (overland, resting, site, probability tabs)
+- Event handlers (button clicks, toggles, dropdown changes)
 - CSS styling
 - Dark mode configuration
 
@@ -1285,10 +1237,12 @@ torchcrawl_nicegui/
 - Data validation across all loaded files
 
 **overland_logic.py:**
-- `overland_generate()`: Full generation
+- `overland_new_day()`: New Day generation (weather + encounters + rest info)
+- `overland_regenerate_day()`: Regenerate encounters only
 - `overland_reset()`: Clear state
 - `regenerate_individual_overland_encounter()`: Single encounter
 - `regenerate_individual_weather()`: Weather only
+- `generate_overland_rest_info()`: Generate rest info for current season
 
 **site_logic.py:**
 - `site_generate()`: Full generation
@@ -1355,6 +1309,7 @@ calendar_file: str = ""
 selected_overland_zone: Optional[str] = None
 selected_overland_overlay: Optional[str] = None
 selected_overland_season: Optional[str] = None
+selected_overland_watch: Optional[str] = None  # For probability tab
 selected_site_zone: Optional[str] = None
 
 # Generated content
@@ -1381,7 +1336,7 @@ weather_by_season: xr.DataArray = None                    # 2D: [Weather, Season
 
 # Calendar data (optional feature)
 calendar_file: str = ""                   # Path to calendar file (from Default Data Files.yaml)
-calendar_data: Optional[Dict] = None      # Full calendar structure from YAML (includes current_date)
+calendar_data: Optional[Dict] = None      # Full calendar structure from YAML (includes current: {calendar_month, calendar_day, lunar_day, is_blood_moon})
 calendar_month_lookup: Dict[str, int] = {}  # Month name -> 1-based index for quick lookups
 ```
 
@@ -1611,13 +1566,13 @@ calendar:
   name: "Torchcrawl Standard Calendar"
   description: "A simple 10-month fantasy calendar with 300 days per year"
   days_per_week: 6
-  current_date:
-    month: 1
-    day: 15
   lunar_cycle_length: 27
   blood_moon_chance: 10
-  lunar_day: null
-  is_blood_moon: false
+  current:
+    calendar_month: 1
+    calendar_day: 15
+    lunar_day: null
+    is_blood_moon: false
   months:
     - name: "Deepwinter"
       days: 30
@@ -1638,9 +1593,11 @@ calendar:
 - `name`: String - Calendar display name
 - `description`: String - Calendar description
 - `days_per_week`: Integer - Days per week (used for grid columns, e.g., 6)
-- `current_date`: Object or null
-  - `month`: Integer (1-based) - Current month index
-  - `day`: Integer - Current day of month
+- `current`: Object or null - Contains all mutable state:
+  - `calendar_month`: Integer (1-based) - Current month index
+  - `calendar_day`: Integer - Current day of month
+  - `lunar_day`: Integer or null - Current position in lunar cycle (1 to lunar_cycle_length). If null on first load, randomized to a starting position.
+  - `is_blood_moon`: Boolean - Whether current full moon is a blood moon. Only meaningful when lunar_day is in full moon phase. Rolled when entering full moon phase, saved until next cycle.
 - `months`: List of month objects
   - `name`: String - Month name
   - `days`: Integer - Days in month
@@ -1651,14 +1608,9 @@ calendar:
   - `month`: String - Month name (must match a month name)
   - `day`: Integer - Day of month
 
-**Lunar Phase Fields (optional):**
+**Lunar Phase Fields (top-level, optional):**
 - `lunar_cycle_length`: Integer - Days in one lunar cycle (e.g., 27)
 - `blood_moon_chance`: Integer - Percent chance of blood moon on full moon (e.g., 10)
-- `lunar_day`: Integer or null - Current position in lunar cycle (1 to lunar_cycle_length)
-  - If null on first load, randomized to a starting position
-- `is_blood_moon`: Boolean - Whether current full moon is a blood moon
-  - Only meaningful when lunar_day is in full moon phase
-  - Rolled when entering full moon phase, saved until next cycle
 
 **Configuration:**
 Calendar file path is specified in `Default Data Files.yaml`:
@@ -1667,7 +1619,7 @@ files:
   calendar_file: "Data/Default Calendar.yaml"
 ```
 
-**Note:** Calendar feature is optional. If `calendar_file` is not specified or file doesn't exist, the Calendar tab won't appear.
+**Note:** Calendar feature is optional. If `calendar_file` is not specified or file doesn't exist, calendar-related elements won't appear in the Header.
 
 ---
 
@@ -1705,10 +1657,10 @@ files:
 - **Rationale:** NiceGUI columns have default gaps, need both class and style for certainty
 - **Implementation:** Applied to all parent columns and containers
 
-**3. Expansion State Persistence (Site Only):**
-- **Decision:** Remember expansion when encounters shift
+**3. Expansion State Persistence (Overland and Site):**
+- **Decision:** Remember expansion states for both overland and site encounters
 - **Rationale:** Users tracking approaching threats don't want to re-expand
-- **Implementation:** Store in `app.storage.user`, shift along with encounters
+- **Implementation:** Store in `app.storage.user` as `overland_expansions` and `site_expansions` dicts. `reset_expansion_states()` clears these dicts by mode ("overland", "site", or "all"). Site states shift along with encounters on New Turn.
 
 **4. Timer "Current" State (0-9 Minutes):**
 - **Decision:** Label 0-9 minutes as "Current:" instead of removing immediately
@@ -1723,7 +1675,7 @@ files:
 **6. Calendar as Optional Feature:**
 - **Decision:** Calendar only appears when calendar_file is configured and exists
 - **Rationale:** Not all campaigns need fantasy calendars
-- **Implementation:** Conditional Calendar tab, conditional season dropdown
+- **Implementation:** Calendar popup dialog accessible from Header date display; season dropdown conditionally hidden when calendar drives season
 
 **7. Current Date in Calendar YAML:**
 - **Decision:** Store current_date in the calendar YAML file, not in code
@@ -1813,24 +1765,40 @@ files:
 
 ### 12.3 Testing Checklist
 
-**Overland Mode:**
-- [ ] Generate with zone, overlay, season (no calendar)
-- [ ] Generate with zone, overlay (with calendar date - season auto-detected)
-- [ ] Current date displays with emphasized month name
+**Header & Popup Dialogs:**
+- [ ] Header displays New Day, date, moon, weather, days out in row 1
+- [ ] Holiday info shows in row 2 when on a holiday
+- [ ] Zone/overlay/season dropdowns in row 3
 - [ ] Season dropdown hidden when calendar date is set
 - [ ] Season dropdown visible when no calendar or no date
-- [ ] New Day button advances calendar and regenerates
-- [ ] Weather displays with emphasized name
+- [ ] Click date opens calendar popup with month grids
+- [ ] Season-change separators between months in calendar popup
+- [ ] Click day in calendar sets date and closes popup
+- [ ] Holiday list in calendar popup is clickable
+- [ ] Click moon opens moon popup with phase selector
+- [ ] Phase selector highlights current phase
+- [ ] Click weather opens weather popup with probabilities
+- [ ] Click weather entry sets weather directly
+- [ ] Click days out opens reset confirmation
+- [ ] New Day button advances calendar, lunar day, and regenerates
+
+**Overland Mode:**
+- [ ] Weather displays with emphasized name and effects
+- [ ] Weather popup button (🔄) opens weather dialog
+- [ ] Encounters regenerate button on section header
 - [ ] Encounters generated for each watch period (or "No Encounter")
 - [ ] Encounter names emphasized (not "No Encounter")
 - [ ] Click encounter name to expand/collapse
+- [ ] Expansion states persisted in overland_expansions
 - [ ] Details show immediately below name (no gap)
-- [ ] Individual regeneration works
-- [ ] Rest Check displays with emphasized weather modifiers
-- [ ] Reset clears all content
+- [ ] Individual encounter regeneration works
 - [ ] Season encounter_modification affects encounter frequency (fewer in Winter)
 - [ ] Encounters with 0% season never appear in that season (e.g., Ankheg in Winter)
 - [ ] Encounters with lower season % appear less frequently than those with higher %
+
+**Resting Tab:**
+- [ ] Rest Check displays with emphasized weather modifiers
+- [ ] Refreshes on New Day, weather change, zone/season/overlay change
 
 **Site Mode:**
 - [ ] Generate with zone
@@ -1849,24 +1817,11 @@ files:
 - [ ] Expansion states preserved after New Turn
 - [ ] Reset clears all content and states
 
-**Calendar Tab:**
-- [ ] Tab only visible when calendar file loaded
-- [ ] Calendar name and description display
-- [ ] Current date displays with emphasized month name
-- [ ] "No date set" message when current_date is null
-- [ ] Holiday displays when current date matches a holiday
-- [ ] Month grids show all months with correct days
-- [ ] Grid columns match days_per_week setting
-- [ ] Click day sets current date
-- [ ] Current date highlighted in grid
-- [ ] Date changes persist across page refresh
-- [ ] Date changes reflect immediately in Overland tab
-
 **Moon Phases:**
-- [ ] Moon phase displays next to date (Calendar tab and Overland tab)
+- [ ] Moon phase displays in Header next to date
 - [ ] Correct unicode icon for each phase (🌑🌒🌓🌔🌕🌖🌗🌘)
 - [ ] Phase name displays correctly
-- [ ] Lunar phase selector shows all 8 phase icons
+- [ ] Moon popup shows lunar phase selector with all 8 phase icons
 - [ ] Click phase icon sets lunar_day to that phase
 - [ ] [-] button decreases lunar_day (wraps correctly)
 - [ ] [+] button increases lunar_day (wraps correctly)
@@ -1889,13 +1844,14 @@ files:
 
 **UI:**
 - [ ] Dark mode follows system preference
-- [ ] Tabs left-aligned, normal case
-- [ ] Calendar tab conditional (only when calendar loaded)
+- [ ] 8 tabs left-aligned, normal case
+- [ ] Persistent Header visible above all tabs
 - [ ] All buttons flush left (not far right)
 - [ ] Ultra-tight spacing throughout
 - [ ] No gaps between encounter names and details
 - [ ] Consistent indentation hierarchy
 - [ ] Emphasis color (#F78080) correct
+- [ ] Popup dialogs open and close correctly
 
 ---
 
@@ -1934,7 +1890,9 @@ files:
 **Expansion State:** Whether an encounter's details are visible or hidden
 **Emphasis:** Coral pink highlighting (#F78080) applied to important text
 **Current:** Label for timers or encounters at 0-9 minutes or "now"
-**Calendar:** Optional fantasy calendar system with months, seasons, and holidays
+**Header:** Persistent UI section above tabs containing date, moon, weather, days out, and zone/overlay/season dropdowns
+**Popup Dialog:** Modal dialog opened by clicking Header elements (calendar, moon, weather, days out)
+**Calendar:** Optional fantasy calendar system with months, seasons, and holidays (accessed via popup dialog)
 **Current Date:** The in-game date set in the calendar (stored in calendar YAML file)
 **Holiday:** Special day in the calendar with name and description
 **Auto-Season:** Season automatically detected from current calendar month
@@ -1949,6 +1907,22 @@ files:
 ---
 
 ## 15. Revision History
+
+**Version 3.0 - February 19, 2026:**
+- Persistent Header above all tabs with New Day, date, moon, weather, days out
+- All Header elements clickable to open popup dialogs
+- Calendar popup dialog replaces former Calendar tab (month grids, season-change separators, holiday list)
+- Moon popup dialog with lunar phase selector
+- Weather popup dialog with season probabilities and direct weather selection
+- Days Out confirmation dialog before reset
+- 8 tabs: Overland Travel, Forage, Resting, Site Exploration, Settlements, Creatures, Overland Enc. Prob., Site Enc. Prob.
+- Resting tab (formerly Rest Check section in Overland tab), refreshable on weather/zone/season changes
+- Overland encounters section header has regenerate button
+- Expansion states now persisted for overland too (overland_expansions dict)
+- Zone/overlay/season dropdowns moved from Overland tab to Header
+- Overland Enc. Prob. tab shows season as text label instead of dropdown
+- Dropdown change handlers use on_change= parameter to avoid spurious events
+- 4 placeholder tabs (Forage, Settlements, Creatures show "Coming soon")
 
 **Version 2.3 - February 12, 2026:**
 - Added Default Seasons.yaml: defines seasons with encounter_modification percentage
