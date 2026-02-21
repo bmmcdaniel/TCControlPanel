@@ -17,7 +17,7 @@ from typing import Dict
 import config
 from models import Encounter, Timer
 from logger import log_info, log_error
-from utils import verbose_print
+from utils import verbose_print, apply_false_signs, apply_signs
 
 
 def site_reset() -> None:
@@ -115,10 +115,14 @@ def site_new_turn() -> None:
         zones_data=config.zones_data
     )
     new_encounters["50 minutes"] = new_50_encounter
-    
+
+    # Apply false signs then real signs for the new encounter only
+    apply_false_signs(new_encounters, ["50 minutes"])
+    apply_signs(new_encounters, ["40 minutes", "50 minutes"])
+
     # Update global state
     config.generated_site_encounters = new_encounters
-    
+
     verbose_print(f"=== Turn {config.generated_site_time} minutes complete ===")
 
 
@@ -186,9 +190,13 @@ def generate_site_encounters(include_current: bool = False) -> Dict[str, Encount
             
             encounters[time_slot] = encounter
     
+    # Apply false signs first, then real signs (real signs can replace false signs)
+    apply_false_signs(encounters, config.SITE_TIME_SLOTS)
+    apply_signs(encounters, config.SITE_TIME_SLOTS)
+
     # Update global state
     config.generated_site_encounters = encounters
-    
+
     return encounters
 
 

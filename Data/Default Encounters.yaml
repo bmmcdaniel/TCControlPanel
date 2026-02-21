@@ -2229,6 +2229,7 @@ encounters:
   - A door covered in black tar. It will open only if provided a tale of loss.
   - The door has multiple mouths. It demands to be fed.
   - An iron gate with a griffon's head. It will only allow persons wearing griffon heraldry to pass.
+  - A warped oak door hung with the face of a treowere, surrounded by acorns and leaves.
 - name: Locust, Giant Cave
   type: Creature
   description: 2-foot long locust; tan and brown coloring; powerful hind legs. Viola-like buzzing sounds. Foul stink.
@@ -5362,7 +5363,7 @@ encounters:
   - Far away from the woodcutter's encampment, a grove of ancient furnged trees (DCB p 182). The trees form intricate shapes, in smooth arcs.
   - A wind carries the sound of distant battle horns and bellowing. This is an echo of ancient battles.
   - A ring of twelve birch saplings in a sunny clearing, spaced too regularly to have grown this way by chance. Anyone who enters the clearing hears whispers in the air. Anyone who spends more than 10 minutes in the ring takes 1d20 psychic damage (falling unconscious if they drop to 0), and is magically transported to the nearest faerie road. Those that know the secret can use the ring to travel to the faerie road without taking damage.
-- name: Mysteries
+- name: Mysterious Occurrence
   type: Other
   description: Unsettling or mysterious occurrences without clear explanation.
   habitat: [Any]
@@ -5407,34 +5408,3 @@ encounters:
   - A passing breeze carries tiny, floating flowers.
   - Solid fog blankets the ground for 6 miles. The foggy area is heavily obscured, i.e. The fog blocks vision entirely, although it is translucent to light. Moderate winds (such as the gust of wind spell) or intense heat (such the fireball spell) will temporarily disperse the fog, but it will reform in 30 minutes. The fog lasts 24 hours.
   - Meteor showers light up the night sky.
-- name: Encounter Sign
-  type: Sign
-  description: Foreshadowing of a future encounter.
-  habitat: [Any]
-  habitat_notes: null.
-  watch: {dawn: 15%, morning: 20%, afternoon: 20%, dusk: 15%, early night: 15%, late night: 15%}
-  season: All 100%
-  sparks:
-  - Animals - tracks; scat; fur; eggs; half-eaten prey/food; gnawed bones; scratched bark from claw sharpening; muddy wallows (aurochs, boars, catobeplas); distant howls (wolves); shed skin (snakes); molted feathers; upturned dirt from burrowing; den.
-  - Bugs - tracks; frass; eggs; half-eaten prey/food, sometimes wedged in tree limbs; shed exoskeleton; upturned dirt from burrowing; den; young trees stripped of bark (beetles); spider webs (spiders); mucus trail (snails and slugs).
-  - Dragons - tracks; seen flying at a distance; residue of breath weapon; huge shed scales; claw gouges; storm smell - ozone, sharp, and clean.
-  - Fey - fairy ring; rainbows; rushing water; lingering dusk/dawn; unnatural moon; shimmering air; silvery mists; blooming flowers; scent of roses; mithril arrow; faerie-stuff gold; music carried on the breeze; sharp cold (frost elves).
-  - Fungus - floating spores; fruiting bodies, immature mushrooms or puffballs; crushed mushrooms; musty, earthy smells; creatures infected with fungus.
-  - Humanoids - tracks; broken or discarded equipment; old campfire; food leavings; sound of a signal horn; trail blazes; cut firewood; traps (trappers).
-  - Mutants - pools of raw chaos; "off" colors; senseless destruction; signs from base creature.
-  - Oozes - mucus trail; dissolved leaves and organic matter; skeletal remains of prey; pitted surfaces; oily, discolored water.
-  - Spirits, Elemental - ashes and burnt areas (fire); soaked ground and pools of water (water); disturbed ground (earth); ice shards (ice).
-  - Spirits, Effigy - face carved in tree trunk (treowere); scarecrow; statues; carved object generally.
-  - Spirits, Ghost - call of po-whit birds; sunlight dims; cold breeze; sound of rattling chains; foreboding feeling; flames dying spontaneously; animals acting oddly; spectral mists; distant, mournful wailing; flickering lights (will-o-wisp). 
-  - Spirits, Golem - heavy tracks; broken things; arcane materials. 
-  - Spirits, Angels - sunbeams through clouds; sound of choirs; golden, light motes; scent of myrrh, sweet and resinous; symmetrical patterns of stones and sticks; peacful feelings; pure white birds.
-  - Spirits, Demons - pools of raw chaos; summoning circle; sulfur smell; black ichor; flies and maggots; teeth and bone fragments; sign of possessed creature (werewolf, werebear, wendigo, shadow, succubus).
-  - Undead - strange silence; necrosis smell; corrupted/darkened vegetation; moaning winds; screams (vargul).
-- name: False Encounter Sign
-  type: Sign
-  description: Foreshadowing of an encounter that doesn't actually occur.
-  habitat: [Any]
-  habitat_notes: null.
-  watch: {dawn: 15%, morning: 20%, afternoon: 20%, dusk: 15%, early night: 15%, late night: 15%}
-  season: All 100%
-  sparks:

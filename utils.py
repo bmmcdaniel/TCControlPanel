@@ -17,6 +17,8 @@ Functions:
 - set_lunar_day_to_phase(phase_index: int) -> bool: Set lunar day to start of a phase
 - adjust_lunar_day(delta: int) -> bool: Adjust lunar day by +/- delta
 - initialize_lunar_day() -> bool: Randomize lunar day if not set
+- apply_false_signs(encounters, slot_order) -> None: Replace empty slots with false signs based on false_signs_chance
+- apply_signs(encounters, slot_order) -> None: Replace empty/false-sign slots preceding creature encounters with signs
 
 Classes: None
 """
@@ -708,3 +710,128 @@ def initialize_lunar_day() -> bool:
 
     # Save lunar data
     return save_lunar_data(lunar_day, is_blood_moon)
+
+
+def apply_false_signs(encounters: Dict, slot_order: list) -> None:
+    """
+    Replace empty encounter slots with false signs based on false_signs_chance.
+
+    For each slot, if it contains "No Encounter", roll against false_signs_chance
+    to potentially replace it with a false sign encounter.
+
+    Must be called BEFORE apply_signs(), so that real signs can replace false signs.
+
+    Modifies the encounters dict in place.
+
+    Args:
+        encounters: Dict mapping slot labels to Encounter objects
+        slot_order: List of slot labels in chronological order
+    """
+    import config
+    from models import Encounter
+    from logger import log_info
+
+    signs_data = config.signs_data
+    if not signs_data:
+        return
+
+    false_signs_chance = parse_percentage(signs_data.get('false_signs_chance', '0%'))
+    false_signs_list = signs_data.get('false_signs', [])
+    if not false_signs_list or false_signs_chance <= 0:
+        return
+
+    for slot in slot_order:
+        enc = encounters.get(slot)
+
+        # Only replace empty slots
+        if enc is not None and enc.is_encounter():
+            continue
+
+        # Roll for false sign
+        roll = random.random()
+        if roll > false_signs_chance:
+            verbose_print(f"  False sign roll for {slot}: {roll:.2f} > {false_signs_chance:.2f} — no false sign")
+            continue
+
+        # Replace slot with a false sign
+        false_sign_data = false_signs_list[0]
+        false_sign_encounter = Encounter()
+        false_sign_encounter.name = false_sign_data['name']
+        false_sign_encounter.description = false_sign_data.get('description')
+        false_sign_encounter.sparks = false_sign_data.get('sparks', [])
+        false_sign_encounter.time = slot
+        false_sign_encounter.habitat = false_sign_data.get('habitat')
+        false_sign_encounter.habitat_notes = false_sign_data.get('habitat_notes')
+        false_sign_encounter.encounter_type = false_sign_data.get('type')
+
+        encounters[slot] = false_sign_encounter
+        log_info(f"False sign placed in {slot}")
+        verbose_print(f"  False sign placed in {slot}")
+
+
+def apply_signs(encounters: Dict, slot_order: list) -> None:
+    """
+    Check for sign opportunities after encounter generation.
+
+    For each slot (starting from the second), if it contains a creature encounter
+    and the preceding slot is "No Encounter", roll against signs_chance to
+    potentially replace the preceding slot with a sign encounter.
+
+    Modifies the encounters dict in place.
+
+    Args:
+        encounters: Dict mapping slot labels to Encounter objects
+        slot_order: List of slot labels in chronological order
+    """
+    import config
+    from models import Encounter
+    from logger import log_info
+
+    signs_data = config.signs_data
+    if not signs_data:
+        return
+
+    signs_chance = parse_percentage(signs_data.get('signs_chance', '0%'))
+    signs_list = signs_data.get('signs', [])
+    if not signs_list or signs_chance <= 0:
+        return
+
+    for i in range(1, len(slot_order)):
+        current_slot = slot_order[i]
+        prev_slot = slot_order[i - 1]
+
+        current_enc = encounters.get(current_slot)
+        prev_enc = encounters.get(prev_slot)
+
+        if current_enc is None or not current_enc.is_encounter():
+            continue
+
+        # Check if current encounter is a creature type
+        if current_enc.encounter_type != 'Creature':
+            continue
+
+        # Check if preceding slot is "No Encounter" or a false sign
+        if prev_enc is not None and prev_enc.is_encounter() and prev_enc.encounter_type != "False Sign":
+            continue
+
+        # Roll for sign
+        roll = random.random()
+        if roll > signs_chance:
+            verbose_print(f"  Sign roll for {prev_slot}: {roll:.2f} > {signs_chance:.2f} — no sign")
+            continue
+
+        # Replace preceding slot with a sign
+        sign_data = signs_list[0]  # For now, always use the first sign
+        sign_encounter = Encounter()
+        sign_encounter.name = sign_data['name']
+        sign_encounter.description = sign_data.get('description')
+        sign_encounter.sparks = sign_data.get('sparks', [])
+        sign_encounter.time = prev_slot
+        sign_encounter.habitat = sign_data.get('habitat')
+        sign_encounter.habitat_notes = sign_data.get('habitat_notes')
+
+        sign_encounter.encounter_type = sign_data.get('type')
+
+        encounters[prev_slot] = sign_encounter
+        log_info(f"Sign placed in {prev_slot} (foreshadowing {current_enc.name} in {current_slot})")
+        verbose_print(f"  Sign placed in {prev_slot} (foreshadowing {current_enc.name} in {current_slot})")

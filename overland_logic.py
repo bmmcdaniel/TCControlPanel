@@ -18,7 +18,7 @@ from typing import Dict
 import config
 from models import Weather, Encounter
 from logger import log_info
-from utils import verbose_print
+from utils import verbose_print, apply_false_signs, apply_signs
 
 
 def overland_reset() -> None:
@@ -154,9 +154,13 @@ def generate_overland_encounters() -> Dict[str, Encounter]:
         
         encounters[watch] = encounter
     
+    # Apply false signs first, then real signs (real signs can replace false signs)
+    apply_false_signs(encounters, config.watches_list)
+    apply_signs(encounters, config.watches_list)
+
     # Update global state
     config.generated_overland_encounters = encounters
-    
+
     return encounters
 
 

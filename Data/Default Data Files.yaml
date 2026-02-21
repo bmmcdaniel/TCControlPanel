@@ -7,6 +7,7 @@ files:
   weathers_file: "Data/Default Weathers.yaml"
   zones_file: "Data/Default Zones.yaml"
   travelinfo_file: "Data/Default Travel Info.yaml"
+  signs_file: "Data/Default Signs.yaml"
 
   encounter_by_zone_file: "Data/Default Encounters By Zone.xlsx"
   weather_by_season_file: "Data/Default Weather By Season.xlsx"

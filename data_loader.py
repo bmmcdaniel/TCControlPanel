@@ -93,6 +93,11 @@ def load_all_data() -> bool:
         log_error("Failed to load travel info file")
         return False
 
+    # Step 7.6: Load signs
+    if not load_signs_file():
+        log_error("Failed to load signs file")
+        return False
+
     # Step 8: Load encounter by zone (Excel)
     if not load_encounter_by_zone_excel():
         log_error("Failed to load encounter by zone Excel file")
@@ -149,6 +154,7 @@ def load_datafile_config() -> bool:
         config.encounter_by_zone_file = files.get('encounter_by_zone_file', '')
         config.weather_by_season_file = files.get('weather_by_season_file', '')
         config.travelinfo_file = files.get('travelinfo_file', '')
+        config.signs_file = files.get('signs_file', '')
         config.calendar_file = files.get('calendar_file', '')
 
         log_info(f"Loaded master config from {config.datafile_file}")
@@ -409,6 +415,29 @@ def load_travelinfo_file() -> bool:
 
     except Exception as e:
         log_error(f"Error loading travel info file: {e}")
+        return False
+
+
+def load_signs_file() -> bool:
+    """
+    Load signs and false signs data.
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        verbose_print(f"Loading signs from {config.signs_file}")
+        with open(config.signs_file, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+
+        config.signs_data = data
+
+        log_info(f"Loaded signs data")
+
+        return True
+
+    except Exception as e:
+        log_error(f"Error loading signs file: {e}")
         return False
 
 

@@ -1,6 +1,6 @@
 # Torchcrawl GM Control Panel - Complete Specification
 
-**Version:** 3.2 (NiceGUI + Overland Travel Tab + Resting Tab Formatting)
+**Version:** 3.3 (Signs & False Signs)
 **Date:** February 20, 2026
 **Framework:** NiceGUI 1.4+
 **Language:** Python 3.9+
@@ -102,6 +102,7 @@ app.py                 ← Main UI + Routing
 class Encounter:
     name: Optional[str]           # Encounter name (None = no encounter)
     time: Optional[str]           # Time of occurrence
+    encounter_type: Optional[str] # Type from YAML: "Creature", "Other", "Forage", "Sign", "False Sign"
     sparks: List[str]             # Situation prompts (1-N items)
     description: Optional[str]    # Physical description
     habitat: Optional[List[str]]  # Applicable zones
@@ -1155,6 +1156,55 @@ config.generated_site_timers = [
 
 ---
 
+### 6.6 Signs & False Signs
+
+#### 6.6.1 False Sign Generation (`apply_false_signs()`)
+
+**Algorithm:**
+```
+For each slot in slot_order:
+  1. If slot contains an encounter (is_encounter() == True), skip
+  2. Roll random 0.0-1.0 against false_signs_chance (from Default Signs.yaml)
+  3. If roll <= false_signs_chance:
+     - Replace slot with a false sign encounter
+     - Set encounter_type from YAML type field ("False Sign")
+     - Copy name, description, sparks, habitat, habitat_notes from YAML
+```
+
+**Timing:** Called BEFORE `apply_signs()`, so real signs can replace false signs.
+
+#### 6.6.2 Sign Generation (`apply_signs()`)
+
+**Algorithm:**
+```
+For each slot (starting from the second in slot_order):
+  1. If current slot is not an encounter, skip
+  2. If current slot's encounter_type != "Creature", skip
+  3. If preceding slot has an encounter AND encounter_type != "False Sign", skip
+     (preceding slot must be empty or a false sign)
+  4. Roll random 0.0-1.0 against signs_chance (from Default Signs.yaml)
+  5. If roll <= signs_chance:
+     - Replace preceding slot with a sign encounter
+     - Set encounter_type from YAML type field ("Sign")
+     - Copy name, description, sparks, habitat, habitat_notes from YAML
+```
+
+**Key rules:**
+- Signs foreshadow creature encounters only (not Other, Forage, etc.)
+- Dawn/Current (first slot) cannot have a sign placed before it (no preceding slot)
+- Signs can replace false signs (a real sign overwrites a false sign)
+- signs_chance and false_signs_chance are flat percentages, not modified by season/watch/zone
+- Both functions modify the encounters dict in place
+
+**Call order in generation:**
+1. Generate all encounters for slots
+2. `apply_false_signs(encounters, slot_order)` — fill empty slots
+3. `apply_signs(encounters, slot_order)` — place signs before creature encounters
+
+**Source:** `Default Signs.yaml`, loaded into `config.signs_data`
+
+---
+
 ## 7. Features
 
 ### 7.0 Overland Travel Tab Features
@@ -1905,7 +1955,47 @@ files:
 
 ---
 
-### 11.11 Default Data Files.yaml
+### 11.11 Default Signs.yaml
+
+**Format:**
+```yaml
+version: 1
+signs_chance: 25%
+signs:
+- name: Encounter Sign
+  type: Sign
+  description: Foreshadowing of a future encounter.
+  habitat: [Any]
+  habitat_notes: null.
+  watch: {dawn: 15%, morning: 20%, ...}
+  season: {Spring: 100%, Summer: 100%, ...}
+  sparks:
+  - Animals - tracks; scat; fur; ...
+  - Bugs - tracks; frass; eggs; ...
+  - (one spark per creature category)
+false_signs_chance: 15%
+false_signs:
+- name: False Encounter Sign
+  type: False Sign
+  description: Foreshadowing of an encounter that doesn't actually occur.
+  habitat: [Any]
+  sparks:
+  - (same spark list as signs)
+```
+
+**Fields:**
+- `signs_chance`: Percentage chance a sign is placed before a creature encounter (if preceding slot is empty or false sign)
+- `signs`: List of sign definitions. Each has name, type ("Sign"), description, sparks (one per creature category)
+- `false_signs_chance`: Percentage chance an empty encounter slot becomes a false sign
+- `false_signs`: List of false sign definitions. Each has name, type ("False Sign"), description, sparks
+
+**Notes:**
+- Sparks are organized by creature category (Animals, Bugs, Dragons, Fey, etc.) — GM selects the appropriate category spark based on the upcoming creature encounter (for signs) or at random (for false signs)
+- The `type` field distinguishes encounter types: "Sign" and "False Sign" are used by the sign/false sign logic
+
+---
+
+### 11.12 Default Data Files.yaml
 
 **Format:**
 ```yaml
@@ -1917,6 +2007,7 @@ files:
   weathers_file: "Data/Default Weathers.yaml"
   restinfo_file: "Data/Default Rest Info.yaml"
   travelinfo_file: "Data/Default Travel Info.yaml"
+  signs_file: "Data/Default Signs.yaml"
   encounter_by_zone_file: "Data/Default Encounters By Zone.xlsx"
   weather_by_season_file: "Data/Default Weather By Season.xlsx"
   calendar_file: "Data/Default Calendar.yaml"
@@ -2200,6 +2291,18 @@ files:
 ---
 
 ## 15. Revision History
+
+**Version 3.3 - February 20, 2026:**
+- Signs and false signs system implemented
+- New `encounter_type` field on Encounter model, populated from YAML `type` field (e.g., "Creature", "Other", "Forage", "Sign", "False Sign")
+- New `Default Signs.yaml` data file with signs_chance, false_signs_chance, and sign/false sign definitions with sparks by creature category
+- New `signs_file` and `signs_data` in config.py
+- New `load_signs_file()` in data_loader.py
+- New `apply_false_signs()` in utils.py: replaces empty encounter slots with false signs based on false_signs_chance
+- New `apply_signs()` in utils.py: places signs in slots preceding creature encounters (replaces empty slots and false signs)
+- Call order: generate encounters → apply_false_signs → apply_signs
+- Signs/false signs integrated into overland (generate_overland_encounters), site (generate_site_encounters), and site turn advancement (site_new_turn)
+- Sign chances are flat percentages, not modified by season/watch/zone
 
 **Version 3.2 - February 20, 2026:**
 - Overland Travel tab implemented (was placeholder "Coming soon")

@@ -26,6 +26,7 @@ class Encounter:
         self.habitat: Optional[List[str]] = None
         self.habitat_notes: Optional[str] = None
         self.seasons: Union[str, Dict[str, float]] = "Any"
+        self.encounter_type: Optional[str] = None
     
     def generate_overland_encounter(
         self,
@@ -120,6 +121,7 @@ class Encounter:
             encounter_details = encounters_data[selected_encounter]
             self.name = selected_encounter
             self.time = watch
+            self.encounter_type = encounter_details.get('type')
             self.sparks = encounter_details['sparks']  # ALL sparks
             self.description = encounter_details['description']
             self.habitat = encounter_details['habitat']
@@ -216,6 +218,7 @@ class Encounter:
             encounter_details = encounters_data[selected_encounter]
             self.name = selected_encounter
             self.time = time_slot
+            self.encounter_type = encounter_details.get('type')
             self.sparks = encounter_details['sparks']  # ALL sparks
             self.description = encounter_details['description']
             self.habitat = encounter_details['habitat']
@@ -306,6 +309,7 @@ class Encounter:
             encounter_details = encounters_data[selected_encounter]
             self.name = selected_encounter
             self.time = "Forage"
+            self.encounter_type = encounter_details.get('type')
             self.sparks = encounter_details['sparks']
             self.description = encounter_details['description']
             self.habitat = encounter_details['habitat']
