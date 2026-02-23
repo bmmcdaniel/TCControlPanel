@@ -1,0 +1,1337 @@
+version: 1
+
+settlement_sizes:
+  - name: Village
+    population: "100-500"
+  - name: Small Town
+    population: "500-2,000"
+  - name: Large Town
+    population: "2,000-10,000"
+  - name: City
+    population: "10,000+"
+
+weapons_melee:
+  - name: Cudgel
+    category: Light
+    damage: 1d3 bludgeoning
+    slots: "½"
+    min_str: "-"
+    attack_check: Str or Dex
+    properties: "Offhand"
+    cost: "0.2 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Torch
+    category: Light
+    damage: 1d3 fire
+    slots: "1"
+    min_str: "-"
+    attack_check: Str or Dex
+    properties: "Offhand, Torch"
+    cost: "0.1 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Dagger
+    category: Light
+    damage: 1d4 piercing
+    slots: "½"
+    min_str: "-"
+    attack_check: Str or Dex
+    properties: "Offhand, Thrown (20/40)"
+    cost: "3 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Dart
+    category: Light
+    damage: 1d4 piercing
+    slots: "½"
+    min_str: "-"
+    attack_check: Str or Dex
+    properties: "Thrown (20/40)"
+    cost: "2 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Handaxe
+    category: Light
+    damage: 1d6 slashing
+    slots: "1"
+    min_str: "5"
+    attack_check: Str or Dex
+    properties: "Offhand, Thrown (20/40)"
+    cost: "10 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Shortsword
+    category: Light
+    damage: 1d6 slashing
+    slots: "1"
+    min_str: "5"
+    attack_check: Str or Dex
+    properties: ""
+    cost: "10 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Club
+    category: Medium
+    damage: 1d4 bludgeoning
+    slots: "1"
+    min_str: "7"
+    attack_check: Str
+    properties: ""
+    cost: "0.3 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Mace
+    category: Medium
+    damage: 1d6 bludgeoning
+    slots: "1"
+    min_str: "7"
+    attack_check: Str
+    properties: ""
+    cost: "5 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Quarterstaff
+    category: Medium
+    damage: 1d6 bludgeoning
+    slots: "2"
+    min_str: "7"
+    attack_check: Str or Dex
+    properties: "Quarterstaff, Two-Handed"
+    cost: "0.5 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Javelin
+    category: Medium
+    damage: 1d6 piercing
+    slots: "1"
+    min_str: "9"
+    attack_check: Str
+    properties: "Thrown (30/60)"
+    cost: "0.5 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Warhammer
+    category: Medium
+    damage: "1d8 bludgeoning*"
+    slots: "1"
+    min_str: "11"
+    attack_check: Str
+    properties: ""
+    cost: "10 gp"
+    availability: [Large Town, City]
+  - name: Battleaxe
+    category: Medium
+    damage: "1d8 slashing*"
+    slots: "1"
+    min_str: "11"
+    attack_check: Str
+    properties: ""
+    cost: "15 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Longsword
+    category: Medium
+    damage: "1d8 slashing*"
+    slots: "1"
+    min_str: "9"
+    attack_check: Str
+    properties: ""
+    cost: "15 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Spear
+    category: Heavy
+    damage: "1d6 piercing*"
+    slots: "2"
+    min_str: "9"
+    attack_check: Str
+    properties: "Thrown (30/60), No Stealth"
+    cost: "2 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Longspear
+    category: Heavy
+    damage: "1d8 piercing*"
+    slots: "3"
+    min_str: "11"
+    attack_check: Str
+    properties: "Longspear, Reach, No Stealth"
+    cost: "20 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Greatclub
+    category: Heavy
+    damage: 1d10 bludgeoning
+    slots: "2"
+    min_str: "11"
+    attack_check: Str
+    properties: "Two-Handed, No Stealth"
+    cost: "1 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Polearm
+    category: Heavy
+    damage: 1d10 slashing
+    slots: "3"
+    min_str: "13"
+    attack_check: Str
+    properties: "Reach, Two-Handed, No Stealth"
+    cost: "50 gp"
+    availability: [Large Town, City]
+  - name: Greataxe
+    category: Heavy
+    damage: 1d12 slashing
+    slots: "2"
+    min_str: "13"
+    attack_check: Str
+    properties: "Two-Handed, No Stealth"
+    cost: "50 gp"
+    availability: [Large Town, City]
+  - name: Greatsword
+    category: Heavy
+    damage: 1d12 slashing
+    slots: "2"
+    min_str: "13"
+    attack_check: Str
+    properties: "Two-Handed, No Stealth"
+    cost: "50 gp"
+    availability: [Large Town, City]
+
+weapons_missile:
+  - name: Sling
+    category: Light
+    damage: 1d4 bludgeoning
+    slots: "1"
+    min_str: "-"
+    attack_check: Dex
+    properties: "Missile (40/80), Two-handed"
+    cost: "0.5 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Shortbow
+    category: Medium
+    damage: 1d6 piercing
+    slots: "2"
+    min_str: "5"
+    attack_check: Dex
+    properties: "Missile (40/80), Two-handed"
+    cost: "20 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Longbow
+    category: Medium
+    damage: 1d8 piercing
+    slots: "2"
+    min_str: "11"
+    attack_check: Dex
+    properties: "Missile (60/120), Two-handed"
+    cost: "50 gp"
+    availability: [Large Town, City]
+  - name: Arrows (6)
+    category: Ammunition
+    damage: "-"
+    slots: "1"
+    min_str: "-"
+    attack_check: "-"
+    properties: ""
+    cost: "1 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Slingstones (12)
+    category: Ammunition
+    damage: "-"
+    slots: "½"
+    min_str: "-"
+    attack_check: "-"
+    properties: ""
+    cost: "0.1 gp"
+    availability: [Village, Small Town, Large Town, City]
+
+weapons_superior:
+  - bonus: "+1"
+    cost: "+500 gp"
+    availability: [Special]
+  - bonus: "+2"
+    cost: "+2,000 gp"
+    availability: [Special]
+  - bonus: "+3"
+    cost: "+8,000 gp"
+    availability: [Special]
+
+weapons_special_materials:
+  - name: Rapier (Mithril)
+    category: Medium
+    damage: 1d8 piercing
+    slots: "1"
+    min_str: "5"
+    attack_check: Dex
+    properties: ""
+    cost: "250 gp"
+    availability: [Special]
+    notes: "Does not include the cost of mithril itself."
+
+armor:
+  - name: No Armor
+    category: Body Armor
+    armor_class: "10 + Dex mod."
+    slots: "-"
+    min_str: "-"
+    properties: "Sleep"
+    cost: "-"
+    availability: []
+  - name: Light Armor
+    category: Body Armor
+    armor_class: "12 + Dex mod."
+    slots: "2"
+    min_str: "-"
+    properties: "Sleep"
+    cost: "15 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Medium Armor
+    category: Body Armor
+    armor_class: "14 + Dex mod. (max +2)"
+    slots: "4"
+    min_str: "11"
+    properties: "No Stealth"
+    cost: "50 gp"
+    availability: [Large Town, City]
+  - name: Heavy Armor
+    category: Body Armor
+    armor_class: "16"
+    slots: "6"
+    min_str: "13"
+    properties: "No Stealth"
+    cost: "500 gp"
+    availability: [City]
+  - name: Buckler Shield
+    category: Shields
+    armor_class: "+1"
+    slots: "1"
+    min_str: "7"
+    properties: ""
+    cost: "15 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Shield
+    category: Shields
+    armor_class: "+2"
+    slots: "2"
+    min_str: "11"
+    properties: "No Stealth"
+    cost: "25 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Greatshield
+    category: Shields
+    armor_class: "+3"
+    slots: "3"
+    min_str: "15"
+    properties: "No Stealth"
+    cost: "50 gp"
+    availability: [Large Town, City]
+
+armor_superior:
+  - bonus: "+1"
+    cost: "+500 gp"
+    applicable_to: "Light, Medium and Heavy Armor, and Shields"
+    availability: [Special]
+  - bonus: "+2"
+    cost: "+2,000 gp"
+    applicable_to: "Medium and Heavy Armor only"
+    availability: [Special]
+  - bonus: "+3"
+    cost: "+8,000 gp"
+    applicable_to: "Heavy Armor only"
+    availability: [Special]
+
+armor_special_materials:
+  - name: Mithril Medium Armor
+    category: Body Armor
+    armor_class: "14 + Dex mod."
+    slots: "3"
+    min_str: "7"
+    properties: "Sleep"
+    cost: "1,000 gp"
+    availability: [Special]
+    notes: "Does not include the cost of mithril itself."
+  - name: Mithril Heavy Armor
+    category: Body Armor
+    armor_class: "16 + Dex mod. (max +2)"
+    slots: "4"
+    min_str: "9"
+    properties: "No Stealth"
+    cost: "3,000 gp"
+    availability: [Special]
+    notes: "Does not include the cost of mithril itself."
+  - name: Mithril Buckler Shield
+    category: Shields
+    armor_class: "+1"
+    slots: "0.5"
+    min_str: "-"
+    properties: ""
+    cost: "500 gp"
+    availability: [Special]
+    notes: "Does not include the cost of mithril itself."
+  - name: Mithril Shield
+    category: Shields
+    armor_class: "+2"
+    slots: "1"
+    min_str: "7"
+    properties: "No Stealth"
+    cost: "1,000 gp"
+    availability: [Special]
+    notes: "Does not include the cost of mithril itself."
+  - name: Mithril Greatshield
+    category: Shields
+    armor_class: "+3"
+    slots: "2"
+    min_str: "11"
+    properties: "No Stealth"
+    cost: "1,500 gp"
+    availability: [Special]
+    notes: "Does not include the cost of mithril itself."
+  - name: Dragonscale Medium Armor
+    category: Body Armor
+    armor_class: "16 + Dex mod. (max +2)"
+    slots: "4"
+    min_str: "11"
+    properties: "No Stealth"
+    cost: "2,000 gp"
+    availability: [Special]
+    notes: "Does not include the cost of dragonscale itself."
+
+spellcasting_equipment:
+  - name: Arcane Cane
+    category: Arcane Equipment
+    slots: "1"
+    cost: "10 gp+"
+    availability: [Small Town, Large Town, City]
+    description: "A carved length of wood used as a focus for evocation spells. A damaged arcane cane is usable, but imposes disadvantage on the caster's spell checks when used as an arcane focus."
+  - name: Arcane Orb, Glass
+    category: Arcane Equipment
+    slots: "½"
+    cost: "25 gp+"
+    availability: [Large Town, City]
+    description: "A glass orb used as a focus for illusion spells. A damaged glass orb shatters and is destroyed."
+  - name: Arcane Orb, Crystal
+    category: Arcane Equipment
+    slots: "½"
+    cost: "100 gp+"
+    availability: [City]
+    description: "A crystal orb used as a focus for illusion spells. A damaged crystal orb is usable, but imposes disadvantage on the caster's spell checks when used as an arcane focus."
+  - name: Arcane Staff
+    category: Arcane Equipment
+    slots: "2"
+    cost: "25 gp+"
+    availability: [Large Town, City]
+    description: "A carved length of wood used as a focus for evocation spells. An arcane staff can be used as a quarterstaff weapon. A damaged arcane staff is usable, but imposes disadvantage on the caster's spell checks when used as an arcane focus."
+  - name: Arcane Wand
+    category: Arcane Equipment
+    slots: "½"
+    cost: "5 gp+"
+    availability: [Small Town, Large Town, City]
+    description: "A carved length of wood used as a focus for evocation spells. A damaged arcane wand is usable, but imposes disadvantage on the caster's spell checks when used as an arcane focus."
+  - name: Elemental Ring, Gold
+    category: Arcane Equipment
+    slots: "-"
+    cost: "150 gp+"
+    availability: [City]
+    description: "A heavy gold ring set with precious or semi-precious stones representing the four elements, used as a focus for elemental spells. A damaged elemental ring is usable, but imposes disadvantage on the caster's spell checks when used as an arcane focus."
+  - name: Elemental Ring, Silver
+    category: Arcane Equipment
+    slots: "-"
+    cost: "50 gp+"
+    availability: [Large Town, City]
+    description: "A heavy silver ring set with precious or semi-precious stones representing the four elements, used as a focus for elemental spells. A damaged elemental ring is usable, but imposes disadvantage on the caster's spell checks when used as an arcane focus."
+  - name: Elemental Ring, Copper
+    category: Arcane Equipment
+    slots: "-"
+    cost: "15 gp+"
+    availability: [Large Town, City]
+    description: "A heavy copper ring set with precious or semi-precious stones representing the four elements, used as a focus for elemental spells. A damaged elemental ring is usable, but imposes disadvantage on the caster's spell checks when used as an arcane focus."
+  - name: Ring, Lead
+    category: Arcane Equipment
+    slots: "-"
+    cost: "5 gp+"
+    availability: [Large Town, City]
+    description: "A plain lead metal ring, used as a focus for certain spells. A damaged lead ring is usable, but imposes disadvantage on the caster's spell checks when used as an arcane focus."
+  - name: Spellbook
+    category: Arcane Equipment
+    slots: "2"
+    cost: "25 gp+"
+    availability: [City]
+    description: "A leather-bound book used by wizards to record arcane spells. An ordinary spellbook can record up to 12 spells."
+  - name: Spellbook, Grimoire
+    category: Arcane Equipment
+    slots: "4"
+    cost: "50 gp+"
+    availability: [City]
+    description: "A larger, heftier version of an ordinary spellbook. A grimoire can record up to 36 spells."
+  - name: Spellbook, Traveling
+    category: Arcane Equipment
+    slots: "1"
+    cost: "15 gp+"
+    availability: [City]
+    description: "A smaller, lighter version of an ordinary spellbook designed for travel. A traveling spellbook can only record up to 4 spells."
+  - name: Spell Scroll, Arcane
+    category: Arcane Equipment
+    slots: "½"
+    cost: "Varies"
+    availability: [Varies]
+    description: "A heavy vellum scroll storing a single arcane spell. A character can attempt to use the scroll to cast an arcane spell by making an Intelligence-based spell check. The scroll can be used by any character that can read, but if the character does not have the arcane magic class ability or the arcane theory skill, the spell check is made at disadvantage. Regardless whether the spell check succeeds, the magic fades from the scroll when used. Focus and cost components are not needed to cast a spell from a scroll. A scroll's rank is equal to the rank of the spell it stores."
+  - name: Smokepot (1 use)
+    category: Arcane Equipment
+    slots: "1"
+    cost: "3 gp+"
+    availability: [Small Town, Large Town, City]
+    description: "A single-use clay pot that produces a thick volume of smoke. Often used in summoning rituals."
+  - name: Summoning Chalk (6 pieces)
+    category: Arcane Equipment
+    slots: "-"
+    cost: "5 gp"
+    availability: [Large Town, City]
+    description: "Specially prepared chalk impregnated with powdered metals and gems used to prepare a summoning circle, a focus for summoning spells."
+  - name: Cassock
+    category: Divine Equipment
+    slots: "-"
+    cost: "5 gp+"
+    availability: [Large Town, City]
+  - name: Figurine of Saint
+    category: Divine Equipment
+    slots: "-"
+    cost: "5 gp+"
+    availability: [Large Town, City]
+    description: "A small figurine of a saint. These figurines are popular devotional items and a focus for some specific divine spells. A damaged figurine is not functional."
+  - name: Holy Chalice, Silver
+    category: Divine Equipment
+    slots: "1"
+    cost: "100 gp+"
+    availability: [Large Town, City]
+    description: "A blessed silver chalice decorated with symbols of the Sovereign. A holy chalice is a spellcasting focus for certain divine spells involving food and drink. A damaged holy chalice is usable, but imposes disadvantage on the caster's spell checks when used as a divine focus."
+  - name: Holy Chalice, Wood
+    category: Divine Equipment
+    slots: "1"
+    cost: "10 gp+"
+    availability: [Small Town, Large Town, City]
+    description: "A blessed wooden chalice decorated with symbols of the Sovereign. A holy chalice is a spellcasting focus for certain divine spells involving food and drink. A damaged holy chalice is usable, but imposes disadvantage on the caster's spell checks when used as a divine focus."
+  - name: Holy Symbol, Gold
+    category: Divine Equipment
+    slots: "½"
+    cost: "50 gp+"
+    availability: [City]
+    description: "A gold pendant or amulet representing the power of the Sovereign, often a solar cross, a winged disc or the divine eye. Many divine spells require a holy symbol as a spellcasting focus. To use a holy symbol as a focus, the caster must actually hold it in hand. A damaged holy symbol is usable, but imposes disadvantage on the caster's spell checks when used as a divine focus."
+  - name: Holy Symbol, Silver
+    category: Divine Equipment
+    slots: "½"
+    cost: "10 gp+"
+    availability: [Large Town, City]
+    description: "A silver pendant or amulet representing the power of the Sovereign, often a solar cross, a winged disc or the divine eye. Many divine spells require a holy symbol as a spellcasting focus. To use a holy symbol as a focus, the caster must actually hold it in hand. A damaged holy symbol is usable, but imposes disadvantage on the caster's spell checks when used as a divine focus."
+  - name: Holy Symbol, Wood
+    category: Divine Equipment
+    slots: "½"
+    cost: "2 gp+"
+    availability: [Small Town, Large Town, City]
+    description: "A wooden pendant or amulet representing the power of the Sovereign, often a solar cross, a winged disc or the divine eye. Many divine spells require a holy symbol as a spellcasting focus. To use a holy symbol as a focus, the caster must actually hold it in hand. A damaged holy symbol is usable, but imposes disadvantage on the caster's spell checks when used as a divine focus."
+  - name: Holy Water
+    category: Divine Equipment
+    slots: "½"
+    cost: "25 gp"
+    availability: [Small Town, Large Town, City]
+    description: "Holy water comes in a glass flask that holds 1 pint. As an action, a character can splash holy water on an adjacent target (no attack check required) or use it as a thrown weapon, shattering on impact. Throwing holy water requires a ranged attack as an improvised weapon (20-foot range, or 40-foot at disadvantage), but ignoring armor. On a hit, if the target is an undead, demon or faerie creature, the target takes 1d12 holy damage. If used by a cleric, the cleric can add its level to the damage. A damaged flask of holy water leaks and is nonfunctional."
+  - name: Incense (6 pieces)
+    category: Divine Equipment
+    slots: "-"
+    cost: "5 gp"
+    availability: [Small Town, Large Town, City]
+    description: "Specially prepared incense prepared with blessed oils."
+  - name: Spell Scroll, Divine
+    category: Divine Equipment
+    slots: "½"
+    cost: "Varies"
+    availability: [Varies]
+    description: "A heavy vellum scroll storing a single divine spell. The user attempts to use the scroll to cast a divine spell by making a Wisdom-based spell check. The scroll can be used by any character that can read, but if the character does not have the divine magic class ability or the theology skill, the spell check is made at disadvantage. Regardless whether the spell check succeeds, the magic fades from the scroll when used. Focus and cost components are not needed to cast a spell from a scroll. A scroll's rank is equal to the rank of the spell it stores."
+  - name: Thurible Censer
+    category: Divine Equipment
+    slots: "2"
+    cost: "100 gp+"
+    availability: [Large Town, City]
+    description: "A metal vessel used to burn incense. In many ceremonies, a priest swings an incense-burning thurible from chains."
+
+adventuring_gear:
+  - name: Acid
+    slots: "½"
+    cost: "50 gp"
+    availability: [City]
+    description: "Acid comes in a clay flask that holds 1 pint. As an action, a character can splash acid on an adjacent target (no attack check required) or use it as a thrown weapon, shattering on impact. Throwing acid requires a ranged attack as an improvised weapon (20-foot range, or 40-foot at disadvantage), but ignoring armor. On a hit, the target immediately takes 1d4 acid damage, and for 4 turns thereafter. Acid may also be used to dissolve organic material. A damaged flask of acid is destroyed (and may damage the carrying character)."
+  - name: Backpack
+    slots: "-"
+    cost: "3 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Bedroll
+    slots: "2"
+    cost: "1 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "A bedroll is a light wool blanket wrapped in canvas and secured by straps. It is invaluable for sleeping outdoors. It is treated as bedding when camping."
+  - name: Blanket, Wool
+    slots: "2"
+    cost: "0.5 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "A heavy wool blanket. It is treated as bedding when camping."
+  - name: Block and Tackle
+    slots: "2"
+    cost: "20 gp"
+    availability: [Large Town, City]
+    description: "A set of heavy-duty pulleys that can be used to lift objects. With a rope threaded through them, a block and tackle allows a character to hoist four times the weight it can normally lift. If used to lift around 1,000 pounds or more, the character must make a DC 10 Luck saving check or the block and tackle is damaged."
+  - name: Book, Blank
+    slots: "½"
+    cost: "20 gp"
+    availability: [Large Town, City]
+  - name: Caltrops
+    slots: "1"
+    cost: "5 gp"
+    availability: [Large Town, City]
+    description: "A sack of 2 inch high, iron spikes arranged in a tripod so that one spike always faces upwards. As an action, a character can scatter caltrops to cover a 10-feet square area. A creature that enters the area must succeed on a DC 15 Dexterity saving check or take 1d3 piercing damage and stop moving this turn. A creature moving through the area at one-quarter speed may avoid the caltrops."
+  - name: Candles (6)
+    slots: "½"
+    cost: "0.3 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "For 1 hour, a candle sheds dim light out to 5-foot range. A candle carried in combat, moving quickly or other vigorous activity is automatically extinguished."
+  - name: Chain (10 ft.)
+    slots: "2"
+    cost: "4 gp"
+    availability: [Large Town, City]
+    description: "A light, iron chain. If used to lift around 1,500 pounds or more, the character must make a DC 10 Luck saving check or the chain is damaged. The chain can also be damaged with a DC 25 Strength check."
+  - name: Chalk (6 pieces)
+    slots: "-"
+    cost: "0.5 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Chisel
+    slots: "½"
+    cost: "2 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Cloak, Ghillie
+    slots: "3"
+    cost: "2 gp"
+    availability: [Unavailable]
+    description: "A ghillie cloak is a heavy cloak that allows its wearer to hide in underbrush. It incorporates bits of local flora and other natural materials that must be updated to match local terrain. Those materials make the ghillie cloak extremely bulky, so it is usually discarded before combat. If stripped of natural materials, a ghillie cloak takes only 1 slot. Like a regular cloak, it protects against rain and can be used as bedding when camping."
+  - name: Cloak, Oilcloth
+    slots: "2"
+    cost: "5 gp"
+    availability: [Large Town, City]
+    description: "A long, sleeveless outer garment made of wool boiled in linseed oil, tar and wax, often used by sailors for its superior protection against water. It is bulkier and stiffer than an ordinary wool cloak. It protects against rain and can be used as bedding when camping."
+  - name: Cloak, Wool
+    slots: "1"
+    cost: "2 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A long, sleeveless outer garment made of treated wool, often used by travelers. It protects against rain and can be used as bedding when camping."
+  - name: Coffer, Iron
+    slots: "2"
+    cost: "25 gp"
+    availability: [Large Town, City]
+    description: "A coffer is a 1-foot long strongbox used to store valuables."
+  - name: Coffer, Silver
+    slots: "2"
+    cost: "50 gp"
+    availability: [City]
+    description: "A coffer is a 1-foot long strongbox used to store valuables."
+  - name: Coffer, Wood
+    slots: "2"
+    cost: "10 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A coffer is a 1-foot long strongbox used to store valuables."
+  - name: Cooking Herbs
+    slots: "½"
+    cost: "0.1 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Cooking Spices, Exotic
+    slots: "½"
+    cost: "5 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Crowbar
+    slots: "1"
+    cost: "3 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A character using a crowbar has advantage to Strength checks if used for prying."
+  - name: Dice
+    slots: "-"
+    cost: "2 gp+"
+    availability: [Small Town, Large Town, City]
+  - name: File
+    slots: "½"
+    cost: "2 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Firewood Bundle (1 night)
+    slots: "5"
+    cost: "0.1 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "A bundle of wood suitable for a night's campfire. A bundle contains about 10 small logs. A campfire made with the bundle burns brightly for 4 hours, and has smoldering embers for 4 hours. The campfire provides dim light out to 40-foot range. A campfire makes it easier to sleep well while camping."
+  - name: Fishing Line and Hook
+    slots: "-"
+    cost: "1 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Flask (1 Pint), Clay
+    slots: "½"
+    cost: "0.5 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "A flask holds a pint of liquid. Clay flasks are fragile, and may be damaged by rough handling. A damaged clay flask is destroyed."
+  - name: Flask (1 Pint), Glass
+    slots: "½"
+    cost: "2 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A flask holds a pint of liquid. Glass flasks are fragile, and may be damaged by rough handling. A damaged glass flask is destroyed."
+  - name: Flask (1 Pint), Rock Crystal
+    slots: "½"
+    cost: "50 gp"
+    availability: [City]
+    description: "A flask holds a pint of liquid. Rock crystal flasks are carved from a single rock crystal and are quite tough. A damaged rock crystal flask can still hold liquid."
+  - name: Gloves, Leather
+    slots: "-"
+    cost: "1 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Glue, Resin
+    slots: "-"
+    cost: "0.2 gp"
+    availability: [Small Town, Large Town, City]
+    description: "Resin glue comes in a small wooden tube holding about 1/2 cup. It is a weak binding agent, taking a long time to dry."
+  - name: Grappling Hook
+    slots: "1"
+    cost: "3 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A pronged iron hook that can be attached to a rope and anchor on rough surfaces."
+  - name: Hammer
+    slots: "½"
+    cost: "2 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Hand Drill
+    slots: "½"
+    cost: "2 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Handbell
+    slots: "½"
+    cost: "3 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Horn, Signal
+    slots: "½"
+    cost: "8 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A small brass or animal horn used to signal over long distances. A signal horn can be heard up to 1/2 to 1 mile away (depending on terrain, forest cover, etc.). Larger horns can be heard over longer distances. A damaged signal horn is nonfunctional."
+  - name: Ink, Vial
+    slots: "-"
+    cost: "12 gp"
+    availability: [Large Town, City]
+    description: "Common oak gall ink sufficient to write 50 pages. Ink comes in a glass vial. A damaged vial of ink is destroyed."
+  - name: Knife
+    slots: "½"
+    cost: "2 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Lamp, Bronze
+    slots: "½"
+    cost: "3 gp+"
+    availability: [Large Town, City]
+    description: "An oil lamp is a bronze wicked vessel. It casts dim light out to 20-foot range. Once lit, it burns for 4 hours on a flask (1 pint) of oil. Lamps are generally unsuitable for adventuring; a lamp carried in combat, moving quickly or other vigorous activity is automatically extinguished. A damaged lamp is destroyed."
+  - name: Lamp, Clay
+    slots: "½"
+    cost: "1 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "An oil lamp is a clay wicked vessel. It casts dim light out to 20-foot range. Once lit, it burns for 4 hours on a flask (1 pint) of oil. Lamps are generally unsuitable for adventuring; a lamp carried in combat, moving quickly or other vigorous activity is automatically extinguished. A damaged lamp is destroyed."
+  - name: Lock and Key
+    slots: "-"
+    cost: "15 gp"
+    availability: [Large Town, City]
+    description: "A common iron or brass lock can be opened by a character with the Lockpicking skill using lockpicks with a successful DC 15 Dexterity check. A lock can be damaged with a successful DC 25 Strength check. A damaged lock is stuck in its current position, open or closed."
+  - name: Lockpicks
+    slots: "-"
+    cost: "20 gp"
+    availability: [Large Town, City]
+    description: "A set of tools used to pick locks."
+  - name: Mirror, Small Bronze
+    slots: "-"
+    cost: "3 gp"
+    availability: [Large Town, City]
+    description: "A 6 inch mirror made of bronze. A damaged mirror reflects still light but the reflected image is broken and distorted."
+  - name: Mirror, Small Silver
+    slots: "-"
+    cost: "20 gp"
+    availability: [Large Town, City]
+    description: "A 6 inch mirror made of silver. A silver mirror provides a superior image. A damaged mirror reflects still light but the reflected image is broken and distorted."
+  - name: Oil Flask
+    slots: "½"
+    cost: "0.2 gp"
+    availability: [Small Town, Large Town, City]
+    description: "Oil comes in a clay flask that holds 1 pint. As an action, a character can douse oil on an adjacent target (no attack check required) or use it as a thrown weapon, shattering on impact. On a hit, the target is covered in oil. If the target takes any fire damage, the target immediately takes an additional 1d6 fire damage from the burning oil for that round, and two rounds thereafter. Oil can also be poured on the ground to cover a 5-foot square area. If lit, oil burns for 3 rounds and deals 1d6 fire damage to any character that enters the area or ends its turn in the area."
+  - name: Pallet, Feather
+    slots: "3"
+    cost: "2 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Pallet, Straw
+    slots: "3"
+    cost: "0.5 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Pallet, Wool
+    slots: "3"
+    cost: "1 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Paper (6 sheets)
+    slots: "-"
+    cost: "2 gp"
+    availability: [Large Town, City]
+  - name: Perfume
+    slots: "-"
+    cost: "6 gp+"
+    availability: [City]
+  - name: Pickaxe
+    slots: "2"
+    cost: "3 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A character with a pick can break a 2-foot cube of soft stone, such as limestone, in 1 hour; basically, a hole just small enough to crawl through. Harder stone will take longer to break."
+  - name: Pot, Iron
+    slots: "1"
+    cost: "2 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Potter's Clay
+    slots: "1"
+    cost: "0.2 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "Malleable, moist clay that can be shaped by hand. If fired, will turn into pottery."
+  - name: Pouch
+    slots: "-"
+    cost: "1 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Quill, Writing
+    slots: "-"
+    cost: "0.5 gp"
+    availability: [Large Town, City]
+  - name: Quiver
+    slots: "-"
+    cost: "0.5 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Rations, Preserved (6 days)
+    slots: "1"
+    cost: "2 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "Dry rations consist of water and dry foods suitable for extended travel, including smoked jerky, salted fish, dried fruit, hardtack, and nuts."
+  - name: Rations, Perishable (6 days)
+    slots: "2"
+    cost: "0.5 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "Perishable rations consist of water and bread, cheese, fruit, sausage, handpies, salt pork and corned beef; suitable for travel but perishable."
+  - name: Rations, Wayloaf (6 days)
+    slots: "½"
+    cost: "10 gp"
+    availability: [Large Town, City]
+    description: "Wayloaf rations consist of water and wayloaf, a special formula of twice-baked unleavened bread baked with tallow, meat and vegetable. Wayloaf is prized by travelers for its lightness and sustaining properties."
+  - name: Razor
+    slots: "-"
+    cost: "2 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Rope, Hemp (50 ft.)
+    slots: "1"
+    cost: "2 gp"
+    availability: [Small Town, Large Town, City]
+    description: "1/2 inch thick hemp rope. If used to lift around 500 pounds or more, or is used in environments with sharp/fraying edges, the character must make a DC 10 Luck saving check or the rope is damaged. The rope can also be damaged with a DC 20 Strength check."
+  - name: Rope, Cable Hemp (50 ft.)
+    slots: "4"
+    cost: "10 gp"
+    availability: [City]
+    description: "2 inch thick hemp rope. If used to lift around 2,500 pounds or more, the character must make a DC 10 Luck saving check or the cable is damaged. The cable can also be damaged with a DC 30 Strength check."
+  - name: Rope, Rawhide (25 ft.)
+    slots: "1"
+    cost: "5 gp"
+    availability: [Large Town, City]
+    description: "1/2 inch thick rawhide, leather rope. Rawhide leather rope is stronger than hemp rope, but less flexible, prone to stretching and vulnerable to water. If used to lift around 750 pounds or more, or in wet environments, the character must make a DC 10 Luck saving check or the rope is damaged. The rope can also be damaged with a DC 22 Strength check."
+  - name: Sack
+    slots: "-"
+    cost: "0.2 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Salt (1 lb.)
+    slots: "½"
+    cost: "0.2 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Saw
+    slots: "1"
+    cost: "3 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Sealing Wax
+    slots: "-"
+    cost: "2 gp"
+    availability: [City]
+  - name: Shackles
+    slots: "1"
+    cost: "3 gp"
+    availability: [Large Town, City]
+    description: "Iron metal restraints that can bind the hands or feet of a humanoid or creature with similar anatomy. Escaping shackles requires a successful DC 22 Dexterity check. Damaging shackles requires a successful DC 25 Strength check. A character with the contortionism skill can escape shackles without a check."
+  - name: Shovel
+    slots: "2"
+    cost: "2 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "A character with a shovel can shift a 2-foot cube of dirt or loose rubble in a 10-minute turn; basically a hole just small enough to crawl through."
+  - name: Signet Ring
+    slots: "-"
+    cost: "10 gp+"
+    availability: [City]
+  - name: Sledgehammer
+    slots: "2"
+    cost: "3 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Soap
+    slots: "-"
+    cost: "0.2 gp"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Spikes, Iron (6 pieces)
+    slots: "1"
+    cost: "0.5 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "Iron spikes can be useful for spiking doors, crude pitons and many other uses."
+  - name: Tent, 2 Person
+    slots: "4"
+    cost: "3 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A simple and portable canvas tent, sleeping two. A tent provides shelter."
+  - name: Tinderbox
+    slots: "-"
+    cost: "0.5 gp"
+    availability: [Small Town, Large Town, City]
+    description: "This small container holds flint, fire steel, and tinder (usually dry cloth soaked in light oil) used to kindle a fire. Using a tinderbox to light oil, a torch, or anything else with abundant, exposed fuel requires both hands and takes an action with a DC 10 Luck check. In darkness, the DC increases to 20."
+  - name: Torch
+    slots: "1"
+    cost: "0.2 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "A torch is a hefty stick or bundle of reeds with oil-soaked rags. A torch burns for 1 hour, providing dim light out to 20-foot range. After 1 hour, the torchbearer must make a DC 10 Luck check each 10 minutes or the torch burns out. A torch may be used to make a melee attack; a burning torch deals 1d4 fire damage."
+  - name: Twine (100 ft.)
+    slots: "½"
+    cost: "0.4 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "Thin hemp twine. If used to lift around 25 pounds or more, or in environments with sharp/fraying edges, the character must make a DC 10 Luck saving check or the twine is damaged. Twine can also be damaged with a DC 10 Strength check."
+  - name: Vial, Clay (½ cup)
+    slots: "-"
+    cost: "0.5 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "A container that holds 1/2 cup of liquid. Clay vials are fragile, and may be damaged by rough handling. A damaged clay vial is destroyed."
+  - name: Vial, Glass (½ cup)
+    slots: "-"
+    cost: "1 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A container that holds 1/2 cup of liquid. Glass vials are fragile, and may be damaged by rough handling. A damaged glass vial is destroyed."
+  - name: Vial, Rock Crystal (½ cup)
+    slots: "-"
+    cost: "15 gp"
+    availability: [City]
+    description: "A container that holds 1/2 cup of liquid. Rock crystal vials are carved from a single rock crystal and tough. A damaged rock crystal vial can still hold liquid."
+  - name: Waterskin (½ Gallon)
+    slots: "½"
+    cost: "0.5 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Waterskin (1 Gallon)
+    slots: "1"
+    cost: "1 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Whetstone
+    slots: "-"
+    cost: "0.5 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Whistle, Wooden
+    slots: "-"
+    cost: "1 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A small wood whistle. A whistle can be heard up to 1/4 to 1/2 mile away (depending on terrain, forest cover, etc.). A damaged whistle is nonfunctional."
+
+pharmacopoeia:
+  - name: Adder Poison
+    slots: "½"
+    cost: "15 gp"
+    availability: [Varies]
+    description: "Adder poison comes in a glass vial. The poison may be applied to a weapon that deals piercing or slashing damage, and remains potent for up to 1 hour after applied. The target of a successful attack struck by the poisoned weapon must make a DC 10 Strength saving check or take 1d4 venom damage. The damage repeats each minute until the target succeeds on a saving check. If a character using the poisoned weapon rolls a natural 1 on an attack check, the character must succeed on a DC 10 Luck saving check or nick itself and be affected as if attacked."
+  - name: Burn Salve
+    slots: "½"
+    cost: "5 gp"
+    availability: [Small Town, Large Town, City]
+    description: "Burn salve comes in a clay jar that holds a pint. A character that applies Burn Salve to wounds caused by fire or acid damage regains hit points (up to its maximum) equal to one roll of the character's Hit Die or the amount of fire/acid damage. Hit points are regained over a minute."
+  - name: Everyday Potion
+    slots: "½"
+    cost: "1-5 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "This entry covers many unremarkable potions that are rarely useful for adventuring characters. It includes anti-itch potion, beauty potion, digestive potions, emetic potion, fertility potion, hirsute potion (grows hair over a week) and sedative potion (make drowsy)."
+  - name: Feigned Death Potion
+    slots: "½"
+    cost: "50 gp"
+    availability: [Varies]
+    description: "A character that drinks a feigned death potion will fall into a cataleptic state that is indistinguishable from death. The cataleptic state will last 24 hours, and when the character awakes, it will be groggy for 1 hour."
+  - name: Healing Potion
+    slots: "½"
+    cost: "50 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A character that drinks a healing potion regains hit points and will points (up to its maximum) equal to one roll of the character's hit die and will die, respectively. Hit points and will points are regained over a minute."
+  - name: Love Potion
+    slots: "½"
+    cost: "50 gp"
+    availability: [Varies]
+    description: "A character that drinks a love potion must make a Heart saving check (DC 10). If it fails, it takes 1d4 psychic damage and falls in love with the next suitable character it sees. This love lasts 24 hours or indefinitely if the character's will points are reduced to 0. Some love potions are more potent, with a higher DC and causing more damage."
+  - name: Moonsight Potion
+    slots: "½"
+    cost: "100 gp"
+    availability: [Varies]
+    description: "A character that drinks a moonsight potion can see in a 20-foot range in dim light as well as bright light for 4 hours."
+  - name: Nausea Poison
+    slots: "½"
+    cost: "5 gp"
+    availability: [Varies]
+    description: "A character that drinks nausea poison must make a Strength saving check (DC 10). If it fails, it is nauseated for 10 minutes, with disadvantage on attack checks, spell checks and ability checks."
+  - name: Oddberry Wine
+    slots: "½"
+    cost: "5 gp"
+    availability: [Unavailable]
+    description: "A character that drinks oddberry wine must make a Heart saving check (DC 14) or be subject to daydreams, poetry, madness, orgiastic dances, and wild doings under the moon, as well as a longing for faerie lands."
+  - name: Pain Relief Potion
+    slots: "½"
+    cost: "5 gp"
+    availability: [Varies]
+    description: "A pain relief potion eases the pains of a character that drinks it, granting advantage on saving checks against pain effects for 1 hour."
+  - name: Pipeleaf
+    slots: "½"
+    cost: "1 gp"
+    availability: [Small Town, Large Town, City]
+    description: "Cured pipeleaf comes in a linen or leather pouch. It is smoked in a special pipe. When vexed by a problem, a group of at least 2 characters may spend time smoking pipeleaf in contemplation and debate. After an undisturbed hour, the most Intelligent player may make an Intelligence check, with a +1 bonus for each companion beyond the second (maximum +4). If the check meets a DC set by the GM, the GM gives a clue about the problem being contemplated."
+  - name: Pipeleaf Pipe
+    slots: "½"
+    cost: "5-50 gp"
+    availability: [Small Town, Large Town, City]
+  - name: Restful Potion
+    slots: "½"
+    cost: "5 gp"
+    availability: [Varies]
+    description: "A character that drinks a restful potion before sleep has advantage to the character's rest check."
+  - name: Snake Antivenom
+    slots: "½"
+    cost: "25 gp"
+    availability: [Varies]
+    description: "A character that drinks snake antivenom gains advantage on saving checks to resist venom from snakes and other reptiles for 1 hour."
+  - name: Suggestibility Potion
+    slots: "½"
+    cost: "5 gp"
+    availability: [Varies]
+    description: "A character that drinks a suggestibility potion must make a Heart saving check (DC 10). If it fails, it takes 1d6 psychic damage and is more easily convinced to follow a reasonable course of action. The character also has disadvantage on saving checks against mind-affecting spells and effects. The suggestibility lasts 1 hour or 1 day if the character's will points are reduced to 0."
+  - name: Waking Potion
+    slots: "½"
+    cost: "10 gp"
+    availability: [Varies]
+    description: "A character that drinks a waking potion can stay awake a single night without ill effects; afterwards, a character cannot benefit from waking potion for a week."
+  - name: Wigend Brew
+    slots: "½"
+    cost: "10 gp"
+    availability: [Varies]
+    description: "An old Geatish mead recipe, favored by warriors before battle. A character that drinks wigend brew gains advantage on saving checks to resist fear effects for 1 hour."
+
+animals:
+  - name: Cat
+    cost: "3 gp"
+    notes: "An independent-minded pet."
+  - name: Dog, Chase
+    cost: "15 gp"
+    notes: "Sleek, fast dog bred to chase by sight."
+  - name: Dog, Herding
+    cost: "10 gp"
+    notes: "All-around dog bred for herding and guarding against natural predators."
+  - name: Dog, Hunting
+    cost: "15 gp"
+    notes: "Dog that tracks by scent and can chase prey. It has very keen sense of smell."
+  - name: Dog, Mastiff
+    cost: "25 gp"
+    notes: "Powerful dog well-suited to combat."
+  - name: Dog, Terrier
+    cost: "5 gp"
+    notes: "Small dog that digs for vermin. Comfortable underground."
+  - name: Donkey
+    cost: "25 gp"
+    notes: "Sure-footed, most adapted to rough terrain; 30 slots enc."
+  - name: Falcon
+    cost: "100 gp"
+    notes: "Trained hunting bird popular with nobility."
+  - name: Goat
+    cost: "2 gp"
+    notes: "Herding animal kept for meat and milk."
+  - name: Hippogriff
+    cost: "??"
+    notes: "A cross between an eagle and a horse."
+  - name: Horse, Draft
+    cost: "100 gp"
+    notes: "Bred for strength and endurance, including as beast of burden; 80 slots enc."
+  - name: Horse, Flying
+    cost: "??"
+    notes: "Will not breed in captivity; this horse has a flying speed; 70 slots enc."
+  - name: Horse, Superior
+    cost: "500 gp"
+    notes: "Not as strong as a warhorse but fast and high-spirited; 60 slots enc."
+  - name: Horse, Riding
+    cost: "75 gp"
+    notes: "Bred for high speed; tend to be flighty; 40 slots enc."
+  - name: Horse, War
+    cost: "300 gp"
+    notes: "Bred for strength and courage, but can't be ridden for long; 70 slots enc."
+  - name: Mule
+    cost: "40 gp"
+    notes: "Stubborn but reliable beast of burden; comfortable underground; 50 slots enc."
+  - name: Ox
+    cost: "20 gp"
+    notes: "Cattle bred for muscle power."
+  - name: Pig
+    cost: "4 gp"
+    notes: "Tasty."
+  - name: Pony
+    cost: "50 gp"
+    notes: "Small, and suitable for small or light riders; 35 slots enc."
+  - name: Pigeon, Messenger
+    cost: "50 gp"
+    notes: "Trained messenger bird."
+  - name: Sheep
+    cost: "3 gp"
+    notes: "Herding animal kept for wool."
+
+vehicles:
+  - name: Carriage
+    cost: "50 gp"
+    notes: "250 slots"
+    description: "A four-wheeled private vehicle typically used to transport nobles. A carriage is enclosed on all sides and has benches in the interior. A carriage requires a pair of horses to pull. A carriage can carry 250 slots of cargo, including riders."
+  - name: Cart
+    cost: "15 gp"
+    notes: "100 slots"
+    description: "A two-wheeled open vehicle used to transport cargo. A single driver sits upfront. A cart requires a horse or mule to pull. A cart can carry 100 slots of cargo, including the rider."
+  - name: Handcart
+    cost: "5 gp"
+    notes: "20 slots"
+    description: "A small, two-wheeled open vehicle used to transport cargo for short distances. A handcart is pushed by a man. A handcart can carry 20 slots of cargo."
+  - name: Wagon
+    cost: "75 gp"
+    notes: "1,000 slots"
+    description: "A four-wheeled open vehicle used to transport cargo. One or two drivers sit upfront. A wagon requires two or four horses, mules or oxen to pull. A wagon can carry 1,000 slots of cargo, including riders."
+
+retainers:
+  - name: Chaplain
+    cost: "40 gp+"
+    skills: "Lore (Lives of the Saints), Reading"
+    equipment: "Crozier, Holy Symbol"
+    availability: [Small Town, Large Town, City]
+  - name: Cook
+    cost: "15 gp+"
+    skills: "Cooking"
+    equipment: "Cooking Herbs, Iron Pot, Ladle"
+    availability: [Small Town, Large Town, City]
+  - name: Drover, Horse
+    cost: "80 gp"
+    skills: "Horsemanship, Rope Use"
+    equipment: "Draft Horse"
+    availability: [Small Town, Large Town, City]
+  - name: Drover, Mule
+    cost: "60 gp"
+    skills: "Mule Drover, Rope Use"
+    equipment: "Mule"
+    availability: [Small Town, Large Town, City]
+  - name: Falconer
+    cost: "75 gp"
+    skills: "Falconry"
+    equipment: "Trained Falcon"
+    availability: [Small Town, Large Town, City]
+  - name: Guard
+    cost: "40 gp"
+    skills: ""
+    equipment: "Light Armor, Club"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Healer
+    cost: "75 gp"
+    skills: "Leechcraft, Herbalism"
+    equipment: "Miscellaneous Herbs"
+    availability: [Small Town, Large Town, City]
+  - name: Kenneler
+    cost: "40 gp"
+    skills: "Dog Handling"
+    equipment: "Cudgel, Mastiff Dog"
+    availability: [Large Town, City]
+  - name: Laborer
+    cost: "10 gp"
+    skills: ""
+    equipment: ""
+    availability: [Village, Small Town, Large Town, City]
+  - name: Linkboy
+    cost: "10 gp"
+    skills: ""
+    equipment: "Torches (12), Tinderbox"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Mapmaker
+    cost: "100 gp"
+    skills: "Cartography, Reading, Writing"
+    equipment: "Paper, Quill, Ink"
+    availability: [Large Town, City]
+  - name: Mercenary, Archer
+    cost: "100 gp"
+    skills: ""
+    equipment: "Light Armor, Longbow, Arrows (24)"
+    availability: [Large Town, City]
+  - name: Mercenary, Captain
+    cost: "200 gp"
+    skills: "Leadership (1st level)"
+    equipment: "Medium Armor, Longsword, Signal Horn"
+    availability: [Large Town, City]
+  - name: Mercenary, Cavalry
+    cost: "200 gp"
+    skills: "Horsemanship"
+    equipment: "Medium Armor, Shield, Longspear, Longsword, War Horse"
+    availability: [City]
+  - name: Mercenary, Heavy Foot
+    cost: "100 gp"
+    skills: ""
+    equipment: "Medium Armor, Greatshield, Longsword"
+    availability: [City]
+  - name: Mercenary, Light Foot
+    cost: "60 gp"
+    skills: ""
+    equipment: "Light Armor, Shield, Spear"
+    availability: [Small Town, Large Town, City]
+  - name: Messenger
+    cost: "15 gp"
+    skills: ""
+    equipment: "Messenger Pouch"
+    availability: [Small Town, Large Town, City]
+  - name: Musician
+    cost: "40 gp+"
+    skills: ""
+    equipment: ""
+    availability: [Large Town, City]
+  - name: Porter
+    cost: "25 gp"
+    skills: "Portage"
+    equipment: ""
+    availability: [Village, Small Town, Large Town, City]
+  - name: Servant
+    cost: "15 gp+"
+    skills: ""
+    equipment: ""
+    availability: [Small Town, Large Town, City]
+  - name: Squire
+    cost: "Special"
+    skills: "Heraldry"
+    equipment: "Light Armor, Shield, Longsword"
+    availability: [Special]
+  - name: Stablehand
+    cost: "15 gp"
+    skills: "Horsemanship"
+    equipment: "Pitchfork"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Steward
+    cost: "75 gp"
+    skills: "Stewardship, Reading, Writing"
+    equipment: "Ink Vial, Writing Quill, Notebook"
+    availability: [Large Town, City]
+  - name: Wilderness Guide
+    cost: "40 gp+"
+    skills: "Foraging, Camping"
+    equipment: "Shortbow, Arrows (12), Signal Horn"
+    availability: [Village, Small Town, Large Town, City]
+
+services:
+  - name: Selling Used Equipment
+    description: "Undamaged gear can be sold for 50% of the sale price, to a merchant or artisan that vends the gear originally."
+    cost: "50% of sale price"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Repairing Equipment
+    description: "Repairing damaged gear costs 50% of the sale price, and requires an artisan of the same type and skill that created the gear originally."
+    cost: "50% of sale price"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Lending
+    description: "Borrow money from moneylender only. The moneylender will demand collateral worth at least double the value of the loan; collateral cannot be magic items. Characters with good reputations may receive better terms."
+    cost: "10% interest per month"
+    availability: [Large Town, City]
+  - name: Banking/Bailment
+    description: "Coins and valuables can be deposited with a moneylender or moneychanger, and some goldsmiths or jewelers. Bailment of most magic items will be refused, for fear of cursed magic."
+    cost: "10% of value deposited"
+    availability: [Small Town, Large Town, City]
+  - name: Exchange Coins, Gems and Jewelry
+    description: "Exchange coins, gems, and jewelry with moneylender, moneychanger, or selected merchants."
+    cost: "10% discount to face value"
+    availability: [Village, Small Town, Large Town, City]
+    limits:
+      Village: "up to 100 gp per season"
+      Small Town: "up to 1,000 gp per season"
+      Large Town: "up to 10,000 gp per season"
+      City: "no limit"
+  - name: Sell Art and Treasure
+    description: "Sell art and treasure to antiquarian, collector or selected merchants."
+    cost: "50% of value"
+    availability: [Village, Small Town, Large Town, City]
+    limits:
+      Village: "up to 50 gp per season"
+      Small Town: "up to 500 gp per season"
+      Large Town: "up to 5,000 gp per season"
+      City: "no limit"
+  - name: Identifying Herbs
+    description: "All herbalists can identify common herbs and fungi. An herbalist's ability to identify rare herbs and fungi depends on their skill."
+    cost: "1 sp per specimen"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Identifying Herbal Potions
+    description: "All herbalists can identify common herbal potions by smell and taste. An herbalist's ability to identify rare herbal potions depends on their skill."
+    cost: "1 gp per specimen"
+    availability: [Village, Small Town, Large Town, City]
+  - name: Identifying Alchemical Potions
+    description: "All alchemists can identify common alchemical potions by alchemical analysis. An alchemist's ability to identify rare potions depends on their skill."
+    cost: "5 gp per specimen"
+    availability: [Large Town, City]
+  - name: Divine Spellcasting
+    description: "Priests are generally willing to cast spells for Church members in good standing, so long as the priest is convinced it is for a good cause. The priest may request a service or favor in return."
+    cost: "Service or favor"
+    availability: [Village, Small Town, Large Town, City]
+    availability_by_rank:
+      1: Village
+      2: Small Town
+      3: Large Town
+      5: City
+  - name: Sage - General Question
+    description: "The sage either knows the answer to the question or does not. If the sage knows, it will charge 25 gp for the answer. If sage doesn't know, it will charge 5 gp for a suggestion about how the question may be answered."
+    cost: "25 gp (known) / 5 gp (suggestion)"
+    availability: [Large Town, City]
+  - name: Sage - Specific Question
+    description: "The sage will know if it is possible to answer the question. If an answer is possible, there is a 25% chance that the sage knows immediately, and a 25% chance the sage will be able to answer with 1-3 weeks research."
+    cost: "250 gp per day (minimum 250 gp)"
+    availability: [Large Town, City]
+
+scroll_costs:
+  arcane:
+    - rank: 1
+      cost: "100 gp"
+    - rank: 2
+      cost: "250 gp"
+    - rank: 3
+      cost: "750 gp"
+    - rank: 4
+      cost: "2,500 gp"
+    - rank: 5
+      cost: "7,500 gp"
+    - rank: 6
+      cost: "Not available"
+  divine:
+    - rank: 1
+      cost: "10 gp"
+    - rank: 2
+      cost: "25 gp"
+    - rank: 3
+      cost: "75 gp"
+    - rank: 4
+      cost: "250 gp"
+    - rank: 5
+      cost: "750 gp"
+    - rank: 6
+      cost: "Not available"
+
+weapon_properties:
+  - name: Longspear
+    description: "A character wielding a longspear one-handed has disadvantage when using a longspear to attack an adjacent target."
+  - name: Min Str
+    description: "A character must have at least this Strength score to use this weapon."
+  - name: Missile
+    description: "Normal and long range is shown in parenthesis, in feet. A character can use a missile weapon to make ranged attacks up to normal range with no penalty, or up to long range at disadvantage. Each attack with a missile weapon expends a piece of ammunition."
+  - name: No Stealth
+    description: "Characters carrying heavy weapons generally cannot act stealthily."
+  - name: Offhand
+    description: "Offhand weapons can be wielded in a character's off-hand for two-weapon fighting. Two-weapon fighting threatens from multiple angles and grants a +2 bonus to attacks."
+  - name: Quarterstaff
+    description: "A quarterstaff can be used defensively or to threaten from multiple angles. A character using a quarterstaff can choose to gain a +1 bonus to armor class or a +1 bonus to attack."
+  - name: Reach
+    description: "A character can use a reach weapon to attack targets that are adjacent or at 10-foot range."
+  - name: Thrown
+    description: "A thrown weapon can be used to make melee or ranged attacks. Normal and long range is shown in parenthesis, in feet. Thrown weapons cannot be used again until recovered."
+  - name: Torch
+    description: "If used to make a melee attack, a burning torch deals 1d3 fire damage."
+  - name: Two-Handed
+    description: "This weapon requires two hands when a character attacks with it."
+
+special_material_notes:
+  - name: Silvered
+    description: "Pure silver is too weak and malleable to fashion into usable weapons. However, iron weapons can be inlaid with silver runes and designs that are especially effective against undead and lycanthropes. Only metal weapons benefit from being silvered."
+    cost: "+50 gp"
+  - name: Hawthorn
+    description: "Hawthorn is weaker and more brittle than most woods used for weapons. However, hawthorn weapons can effect ghosts and other incorporeal spirits. Only all-wooden weapons benefit from being made from hawthorn. If any effect allowing a saving check would damage a hawthorn weapon, the wielder has -4 penalty on the saving check."
+    cost: "+25 gp"
+  - name: Meteoric Iron
+    description: "Darker than terrestrial iron, meteoric iron contains unearthly alloys. Only all-metal weapons benefit from being made from meteoric iron. If any effect allowing a saving check would damage a meteoric iron weapon, the wielder has +4 bonus on the saving check."
+    cost: "+250 gp (not including raw material)"
+  - name: Mithril
+    description: "A light, silvery metal favored by fey. Mithril weapons are especially effective against undead and lycanthropes. In addition, because of its lightness and tensile strength, mithril can be fashioned into a rapier."
+    cost: "Varies (not including raw material)"

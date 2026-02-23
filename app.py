@@ -633,6 +633,178 @@ def _parse_difficult_travel(effects):
     return (1.0, None)
 
 
+def _build_tooltip(item: dict, section: str) -> str:
+    """Build tooltip text from an item's fields, excluding name and cost."""
+    parts = []
+
+    if section in ('weapons_melee', 'weapons_missile'):
+        if item.get('category'):
+            parts.append(f"Category: {item['category']}")
+        if item.get('damage'):
+            parts.append(f"Damage: {item['damage']}")
+        if item.get('slots'):
+            parts.append(f"Slots: {item['slots']}")
+        if item.get('min_str') and item['min_str'] != '-':
+            parts.append(f"Min Str: {item['min_str']}")
+        if item.get('attack_check') and item['attack_check'] != '-':
+            parts.append(f"Attack: {item['attack_check']}")
+        if item.get('properties'):
+            parts.append(f"Properties: {item['properties']}")
+    elif section == 'armor':
+        if item.get('category'):
+            parts.append(f"Category: {item['category']}")
+        if item.get('armor_class'):
+            parts.append(f"AC: {item['armor_class']}")
+        if item.get('slots') and item['slots'] != '-':
+            parts.append(f"Slots: {item['slots']}")
+        if item.get('min_str') and item['min_str'] != '-':
+            parts.append(f"Min Str: {item['min_str']}")
+        if item.get('properties'):
+            parts.append(f"Properties: {item['properties']}")
+    elif section == 'spellcasting_equipment':
+        if item.get('category'):
+            parts.append(f"Category: {item['category']}")
+        if item.get('slots') and item['slots'] != '-':
+            parts.append(f"Slots: {item['slots']}")
+    elif section in ('adventuring_gear', 'pharmacopoeia'):
+        if item.get('slots') and item['slots'] != '-':
+            parts.append(f"Slots: {item['slots']}")
+    elif section == 'animals':
+        if item.get('notes'):
+            parts.append(item['notes'])
+    elif section == 'vehicles':
+        if item.get('notes'):
+            parts.append(item['notes'])
+    elif section == 'retainers':
+        if item.get('skills'):
+            parts.append(f"Skills: {item['skills']}")
+        if item.get('equipment'):
+            parts.append(f"Equipment: {item['equipment']}")
+    elif section == 'services':
+        if item.get('limits'):
+            limit_parts = [f"{k}: {v}" for k, v in item['limits'].items()]
+            parts.append(f"Limits: {'; '.join(limit_parts)}")
+
+    if item.get('description'):
+        parts.append(item['description'])
+
+    if item.get('cost'):
+        parts.append(f"Cost: {item['cost']}")
+
+    return '\n'.join(parts) if parts else ''
+
+
+def _settlement_table(title: str, items: list, section: str, selected_size: str):
+    """Render a filtered settlement table with Name and Cost columns."""
+    # Filter items by availability
+    filtered = []
+    for item in items:
+        avail = item.get('availability', [])
+        if selected_size in avail:
+            filtered.append(item)
+        elif any(v in avail for v in ('Special', 'Varies')):
+            filtered.append(item)
+
+    if not filtered:
+        return
+
+    ui.label(title).classes('text-lg font-bold mt-2 mb-0')
+    with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
+        # Header row
+        with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+            ui.label('Name').classes('font-bold').style('width: 18rem; flex-shrink: 0;')
+            ui.label('Cost').classes('font-bold').style('width: 8rem; flex-shrink: 0; text-align: center;')
+
+        for item in filtered:
+            tip = _build_tooltip(item, section)
+            avail = item.get('availability', [])
+            # Mark Special/Varies items
+            display_cost = item.get('cost', '')
+            if 'Special' in avail or 'Varies' in avail:
+                avail_note = 'Special' if 'Special' in avail else 'Varies'
+                display_cost = f"{display_cost} ({avail_note})"
+
+            with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                name_label = ui.label(item['name']).style(
+                    'width: 18rem; flex-shrink: 0; white-space: normal; word-wrap: break-word; '
+                    'padding-left: 1em; text-indent: -1em;'
+                )
+                if tip:
+                    name_label.tooltip(tip)
+                ui.label(display_cost).style('width: 8rem; flex-shrink: 0; text-align: center;')
+
+
+def _services_table(services: list, selected_size: str):
+    """Render the services section."""
+    filtered = [s for s in services if selected_size in s.get('availability', [])]
+    if not filtered:
+        return
+
+    ui.label('Services').classes('text-lg font-bold mt-2 mb-0')
+    with ui.column().classes('mt-0 mb-0 ml-4 gap-0'):
+        # Header row
+        with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+            ui.label('Service').classes('font-bold').style('width: 18rem; flex-shrink: 0;')
+            ui.label('Cost').classes('font-bold').style('width: 12rem; flex-shrink: 0; text-align: center;')
+
+        for svc in filtered:
+            tip = _build_tooltip(svc, 'services')
+            with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
+                name_label = ui.label(svc['name']).style(
+                    'width: 18rem; flex-shrink: 0; white-space: normal; word-wrap: break-word; '
+                    'padding-left: 1em; text-indent: -1em;'
+                )
+                if tip:
+                    name_label.tooltip(tip)
+                ui.label(svc.get('cost', '')).style('width: 12rem; flex-shrink: 0; text-align: center;')
+
+
+@ui.refreshable
+def settlements_content():
+    """Refreshable Settlements tab content — shopping filtered by settlement size."""
+    data = config.settlements_data
+    if not data:
+        ui.label('No settlements data loaded').classes('text-gray-500')
+        return
+
+    sizes = [s['name'] for s in data.get('settlement_sizes', [])]
+    if not sizes:
+        ui.label('No settlement sizes defined').classes('text-gray-500')
+        return
+
+    # Default to first size if not set
+    storage_key = 'selected_settlement_size'
+    if storage_key not in app.storage.user or app.storage.user[storage_key] not in sizes:
+        app.storage.user[storage_key] = sizes[0]
+
+    selected = app.storage.user[storage_key]
+
+    def handle_size_change(e):
+        app.storage.user[storage_key] = e.value
+        settlements_content.refresh()
+
+    with ui.row().classes('w-full mt-1 mb-1'):
+        ui.select(
+            options=sizes,
+            value=selected,
+            label='Settlement Size',
+            on_change=handle_size_change
+        ).classes('flex-1')
+
+    # Combine melee + missile weapons
+    weapons = data.get('weapons_melee', []) + data.get('weapons_missile', [])
+    _settlement_table('Weapons', weapons, 'weapons_melee', selected)
+
+    _settlement_table('Armor', data.get('armor', []), 'armor', selected)
+    _settlement_table('Spellcasting Equipment', data.get('spellcasting_equipment', []), 'spellcasting_equipment', selected)
+    _settlement_table('Adventuring Gear', data.get('adventuring_gear', []), 'adventuring_gear', selected)
+    _settlement_table('Pharmacopoeia', data.get('pharmacopoeia', []), 'pharmacopoeia', selected)
+    _settlement_table('Animals', data.get('animals', []), 'animals', selected)
+    _settlement_table('Vehicles', data.get('vehicles', []), 'vehicles', selected)
+    _settlement_table('Retainers', data.get('retainers', []), 'retainers', selected)
+    _services_table(data.get('services', []), selected)
+
+
 @ui.refreshable
 def overland_travel_content():
     """Refreshable Overland Travel tab content — travel points and costs reference."""
@@ -798,7 +970,7 @@ def resting_content():
                     ui.label('Modifier').classes('font-bold').style('width: 10rem; flex-shrink: 0; text-align: center;')
                 for mod in weather_mods:
                     with ui.row().classes('gap-4 mt-0 mb-0').style('flex-wrap: nowrap;'):
-                        ui.label(mod.get('description', '')).style('width: 18rem; flex-shrink: 0; white-space: normal; word-wrap: break-word; padding-left: 1em; text-indent: -1em;')
+                        ui.html(f'<span class="emphasis">{mod.get("description", "")}</span>', sanitize=False).style('width: 18rem; flex-shrink: 0; white-space: normal; word-wrap: break-word; padding-left: 1em; text-indent: -1em;')
                         ui.html(f'<span class="emphasis">{mod.get("modifier", "")}</span>', sanitize=False).style('width: 10rem; flex-shrink: 0; text-align: center;')
 
         # Situational Modifiers table
@@ -1257,7 +1429,7 @@ def index():
             site_content()
 
         with ui.tab_panel(settlements_tab):
-            ui.label('Coming soon').classes('text-gray-500')
+            settlements_content()
 
         with ui.tab_panel(creatures_tab):
             ui.label('Coming soon').classes('text-gray-500')

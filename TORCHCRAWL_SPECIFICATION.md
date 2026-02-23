@@ -1,7 +1,7 @@
 # Torchcrawl GM Control Panel - Complete Specification
 
-**Version:** 3.3 (Signs & False Signs)
-**Date:** February 20, 2026
+**Version:** 3.4 (Settlements Tab)
+**Date:** February 23, 2026
 **Framework:** NiceGUI 1.4+
 **Language:** Python 3.9+
 
@@ -200,7 +200,7 @@ class Timer:
 
 **Tabs (9 total):**
 - Overland Travel, Overland Encounters, Forage, Resting, Site Exploration, Settlements, Creatures, Overland Enc. Prob., Site Enc. Prob.
-- 2 placeholder tabs (Settlements, Creatures) show "Coming soon"
+- 1 placeholder tab (Creatures) shows "Coming soon"
 - All tabs left-aligned, normal case
 
 ### 4.2 Colors
@@ -213,7 +213,7 @@ class Timer:
 - Weather names (not effects)
 - Overland: All encounter names (not "No Encounter")
 - Site: "Current" encounter names only
-- Rest Check: Weather modifiers only
+- Rest Check: Weather modifier condition and value (both emphasized)
 - Site: Time minutes (not hours conversion)
 - Site: "Current" timer names only
 - Calendar: Current month name in date display
@@ -710,7 +710,85 @@ Encounter2: XX.X%
 
 ---
 
-### 5.7 Persistent Header
+### 5.7 Settlements Tab
+
+**Layout:**
+```
+Settlement Size: [Dropdown ▼]
+──────────────────────
+Weapons
+  Name                  Cost
+  Cudgel                0.2 gp
+  Torch                 0.1 gp
+  ...
+
+Armor
+  Name                  Cost
+  ...
+
+Spellcasting Equipment
+  ...
+
+Adventuring Gear
+  ...
+
+Pharmacopoeia
+  ...
+
+Animals
+  ...
+
+Vehicles
+  ...
+
+Retainers
+  ...
+
+Services
+  Service               Cost
+  ...
+```
+
+**Settlement Size Dropdown:**
+- Options loaded from `settlements_data.settlement_sizes` (Village, Small Town, Large Town, City)
+- Selection persisted in `app.storage.user['selected_settlement_size']`
+- Changing selection refreshes all tables
+
+**Filtering:**
+- Each item has an `availability` list (e.g., `[Small Town, Large Town, City]`)
+- Only items whose availability includes the selected settlement size are shown
+- Items with `[Special]` or `[Varies]` availability are always shown, with that label appended to their cost
+
+**Table Format:**
+- Standard table format (flex-nowrap rows, flex-shrink columns, hanging indent)
+- Two columns: Name (18rem) and Cost (8rem, centered)
+- Services table uses wider Cost column (12rem) for longer cost descriptions
+
+**Tooltips:**
+- Hovering over an item name shows a tooltip with full details
+- Tooltip includes all item fields not shown in the table (slots, damage, category, properties, attack check, min str, skills, equipment, description, etc.)
+- Cost is shown at the end of the tooltip
+- Items without extra fields have no tooltip
+
+**Data Sections:**
+- **Weapons**: Combined from `weapons_melee` + `weapons_missile`
+- **Armor**: From `armor`
+- **Spellcasting Equipment**: From `spellcasting_equipment`
+- **Adventuring Gear**: From `adventuring_gear`
+- **Pharmacopoeia**: From `pharmacopoeia`
+- **Animals**: From `animals`
+- **Vehicles**: From `vehicles`
+- **Retainers**: From `retainers`
+- **Services**: From `services` (with limits shown in tooltip)
+
+**Helper Functions:**
+- `_build_tooltip(item, section)`: Constructs tooltip text from item fields based on section type
+- `_settlement_table(title, items, section, selected_size)`: Renders a filtered table with tooltips
+- `_services_table(services, selected_size)`: Renders the services table (wider cost column)
+
+---
+
+### 5.8 Persistent Header
 
 The Header is a `@ui.refreshable` called `global_header()` that renders above all tabs. It contains all overland configuration that was formerly in the Overland tab.
 
@@ -750,7 +828,7 @@ A `ui.separator()` below the dropdowns separates the Header from tab content.
 
 ---
 
-### 5.8 Calendar Popup Dialog
+### 5.9 Calendar Popup Dialog
 
 Opened by clicking the date display in the Header. Implemented as `open_calendar_dialog()` → `calendar_dialog_content(dialog)`.
 
@@ -776,7 +854,7 @@ Opened by clicking the date display in the Header. Implemented as `open_calendar
 
 ---
 
-### 5.9 Moon Popup Dialog
+### 5.10 Moon Popup Dialog
 
 Opened by clicking the moon phase display in the Header. Implemented as `open_moon_dialog()` → `moon_dialog_content(dialog)`.
 
@@ -809,7 +887,7 @@ Opened by clicking the moon phase display in the Header. Implemented as `open_mo
 
 ---
 
-### 5.10 Weather Popup Dialog
+### 5.11 Weather Popup Dialog
 
 Opened by clicking the weather display in the Header. Implemented as `open_weather_dialog()` → `weather_dialog_content(dialog)`.
 
@@ -829,7 +907,7 @@ Opened by clicking the weather display in the Header. Implemented as `open_weath
 
 ---
 
-### 5.11 Days Out Confirmation Dialog
+### 5.12 Days Out Confirmation Dialog
 
 Opened by clicking the days display in the Header.
 
@@ -841,7 +919,7 @@ Opened by clicking the days display in the Header.
 
 ---
 
-### 5.12 CSS Styling
+### 5.13 CSS Styling
 
 #### 5.12.1 Global CSS
 
@@ -929,7 +1007,7 @@ style="margin: 0; padding: 0; margin-left: 2em; line-height: 1.2;"
 
 ---
 
-### 5.13 Standard Table Format
+### 5.14 Standard Table Format
 
 Tables throughout the application use a consistent formatting pattern:
 
@@ -1995,7 +2073,139 @@ false_signs:
 
 ---
 
-### 11.12 Default Data Files.yaml
+### 11.12 Default Settlements.yaml
+
+**Format:**
+```yaml
+version: 1
+
+settlement_sizes:
+  - name: Village
+    population: "100-500"
+  - name: Small Town
+    population: "500-2,000"
+  # ...
+
+weapons_melee:
+  - name: Cudgel
+    category: Light
+    damage: 1d3 bludgeoning
+    slots: "½"
+    min_str: "-"
+    attack_check: Str or Dex
+    properties: "Offhand"
+    cost: "0.2 gp"
+    availability: [Village, Small Town, Large Town, City]
+  # ...
+
+weapons_missile:
+  - name: Sling
+    # (same fields as weapons_melee)
+  # ...
+
+armor:
+  - name: Light Armor
+    category: Body Armor
+    armor_class: "12 + Dex mod."
+    slots: "2"
+    min_str: "-"
+    properties: "Sleep"
+    cost: "15 gp"
+    availability: [Small Town, Large Town, City]
+  # ...
+
+spellcasting_equipment:
+  - name: Arcane Cane
+    category: Arcane Equipment
+    slots: "1"
+    cost: "10 gp+"
+    availability: [Small Town, Large Town, City]
+    description: "A carved length of wood used as a focus for evocation spells..."
+  # ...
+
+adventuring_gear:
+  - name: Torch
+    slots: "1"
+    cost: "0.2 gp"
+    availability: [Village, Small Town, Large Town, City]
+    description: "A torch is a hefty stick or bundle of reeds with oil-soaked rags..."
+  # ...
+
+pharmacopoeia:
+  - name: Healing Potion
+    slots: "½"
+    cost: "50 gp"
+    availability: [Small Town, Large Town, City]
+    description: "A character that drinks a healing potion regains hit points..."
+  # ...
+
+animals:
+  - name: Dog, Mastiff
+    cost: "25 gp"
+    notes: "Powerful dog well-suited to combat."
+  # ...
+
+vehicles:
+  - name: Cart
+    cost: "15 gp"
+    notes: "100 slots"
+    description: "A two-wheeled open vehicle used to transport cargo..."
+  # ...
+
+retainers:
+  - name: Guard
+    cost: "40 gp"
+    skills: ""
+    equipment: "Light Armor, Club"
+    availability: [Village, Small Town, Large Town, City]
+  # ...
+
+services:
+  - name: Repairing Equipment
+    description: "Repairing damaged gear costs 50% of the sale price..."
+    cost: "50% of sale price"
+    availability: [Village, Small Town, Large Town, City]
+  # ...
+
+scroll_costs:
+  arcane:
+    - rank: 1
+      cost: "100 gp"
+    # ...
+  divine:
+    - rank: 1
+      cost: "10 gp"
+    # ...
+
+weapon_properties:
+  - name: Reach
+    description: "A character can use a reach weapon to attack targets..."
+  # ...
+
+special_material_notes:
+  - name: Silvered
+    description: "Pure silver is too weak and malleable..."
+    cost: "+50 gp"
+  # ...
+```
+
+**Key Fields:**
+- `settlement_sizes`: Defines the available settlement sizes for the dropdown filter
+- `availability`: List of settlement sizes where the item is available. Expanded from source material (e.g., "Sm. Town" in source becomes `[Small Town, Large Town, City]`). Special values: `[Special]`, `[Varies]`, `[Unavailable]`
+- `description`: Optional prose description from the source rulebook. Present on most spellcasting equipment, adventuring gear, pharmacopoeia, and vehicles. Items without descriptions in the source (e.g., Backpack, Dice, Knife) have no description field
+- `notes`: Used by animals and vehicles for brief mechanical notes (e.g., encumbrance slots)
+- Weapons, armor, and spellcasting equipment include `category` for grouping (e.g., Light/Medium/Heavy, Arcane/Divine)
+
+**Additional Sections (reference only, not displayed in tables):**
+- `weapons_superior`, `armor_superior`: Superior quality bonuses and costs
+- `weapons_special_materials`, `armor_special_materials`: Special material variants
+- `scroll_costs`: Arcane and divine scroll costs by rank
+- `weapon_properties`: Weapon property definitions (Reach, Offhand, etc.)
+- `special_material_notes`: Special material descriptions (Silvered, Hawthorn, Meteoric Iron, Mithril)
+
+---
+
+### 11.13 Default Data Files.yaml
 
 **Format:**
 ```yaml
@@ -2008,6 +2218,7 @@ files:
   restinfo_file: "Data/Default Rest Info.yaml"
   travelinfo_file: "Data/Default Travel Info.yaml"
   signs_file: "Data/Default Signs.yaml"
+  settlements_file: "Data/Default Settlements.yaml"
   encounter_by_zone_file: "Data/Default Encounters By Zone.xlsx"
   weather_by_season_file: "Data/Default Weather By Season.xlsx"
   calendar_file: "Data/Default Calendar.yaml"
@@ -2291,6 +2502,21 @@ files:
 ---
 
 ## 15. Revision History
+
+**Version 3.4 - February 23, 2026:**
+- Settlements tab implemented (was placeholder "Coming soon")
+- New `Default Settlements.yaml` data file with shopping data extracted from Torchcrawl Beta 1.20.docx
+- Sections: weapons (melee + missile), armor, spellcasting equipment, adventuring gear, pharmacopoeia, animals, vehicles, retainers, services, plus reference sections (superior items, special materials, scroll costs, weapon properties)
+- Item descriptions added from source document (93 items with descriptions across spellcasting equipment, adventuring gear, pharmacopoeia, vehicles)
+- Availability expanded from source abbreviations (e.g., "Sm. Town" → `[Small Town, Large Town, City]`)
+- New `settlements_file` and `settlements_data` in config.py
+- New `load_settlements_file()` in data_loader.py
+- New `settlements_content()` refreshable in app.py with settlement size dropdown filter
+- New helper functions: `_build_tooltip()`, `_settlement_table()`, `_services_table()`
+- Tables show Name and Cost only; hovering shows tooltip with full item details (slots, damage, properties, description, cost)
+- Items with Special/Varies availability always shown with label appended to cost
+- Settlement size selection persisted in `app.storage.user`
+- Resting tab: weather modifier condition text now emphasized (was plain text, only modifier value was emphasized)
 
 **Version 3.3 - February 20, 2026:**
 - Signs and false signs system implemented

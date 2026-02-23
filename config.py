@@ -34,6 +34,7 @@ weathers_file: str = ""
 restinfo_file: str = ""
 travelinfo_file: str = ""
 signs_file: str = ""
+settlements_file: str = ""
 seasons_file: str = ""
 watches_file: str = ""
 encounter_by_zone_file: str = ""
@@ -59,6 +60,7 @@ encounters_data: Dict[str, Dict] = {}      # Encounter name -> {description, hab
 restinfo_data: Dict = {}                   # Rest check tables and modifiers
 travelinfo_data: Dict = {}                 # Travel points, modifiers, and costs
 signs_data: Dict = {}                      # Signs, false signs, and their chances
+settlements_data: Dict = {}               # Settlement shopping, services, retainers
 seasons_data: Dict[str, Dict] = {}         # Season name -> {encounter_modification: str}
 
 # xarray DataArrays (multi-dimensional labeled arrays)

@@ -5,9 +5,9 @@ calendar:
   lunar_cycle_length: 27
   blood_moon_chance: 10
   current:
-    calendar_month: 15
-    calendar_day: 21
-    lunar_day: 21
+    calendar_month: 9
+    calendar_day: 28
+    lunar_day: 19
     is_blood_moon: false
   week_days:
   - Oathday
